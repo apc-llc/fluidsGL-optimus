@@ -16,6 +16,6 @@
 #define TILEX    64                // Tile width
 #define TILEY    64                // Tile height
 #define TIDSX    64                // Tids in X
-#define TIDSY   (4*SCALING)        // Tids in Y
+#define TIDSY    4                 // Tids in Y
 
 #endif
