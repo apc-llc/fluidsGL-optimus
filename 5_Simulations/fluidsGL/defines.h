@@ -9,9 +9,9 @@
 #define PDS     (DIM*CPADW)        // Padded total domain size
 
 #define DT       0.09f             // Delta T for interative solver
-#define VIS     (0.0025f*SCALING)  // Viscosity constant
+#define VIS     (0.0015f*SCALING)  // Viscosity constant
 #define FORCE   (5.8f*DIM*SCALING) // Force scale factor 
-#define FR      (4*SCALING)        // Force update radius
+#define FR      (4*4*SCALING)        // Force update radius
 
 #define TILEX    64                // Tile width
 #define TILEY    64                // Tile height
