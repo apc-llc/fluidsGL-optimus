@@ -317,6 +317,8 @@ void keyboard(unsigned char key, int x, int y)
 #ifndef OPTIMUS
             cudaGraphicsUnregisterResource(cuda_vbo_resource);
             getLastCudaError("cudaGraphicsUnregisterBuffer failed");
+#else
+            cudaMemcpy(particles_gpu, particles, sizeof(cData) * DS, cudaMemcpyHostToDevice);
 #endif
 
             glBindBufferARB(GL_ARRAY_BUFFER_ARB, vbo);
