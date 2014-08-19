@@ -42,11 +42,17 @@ extern cufftHandle planc2r;
 extern cData *vxfield = NULL;
 extern cData *vyfield = NULL;
 
+#ifdef OPTIMUS
+extern cData *particles; // particle positions in host memory
+extern cData *particles_gpu; // particle positions in device memory
+#endif
+
 void setupTexture(int x, int y)
 {
     // Wrap mode appears to be the new default
     texref.filterMode = cudaFilterModeLinear;
     cudaChannelFormatDesc desc = cudaCreateChannelDesc<float2>();
+    getLastCudaError("cudaCreateChannelDesc failed");
 
     cudaMallocArray(&array, &desc, y, x);
     getLastCudaError("cudaMalloc failed");
@@ -356,6 +362,7 @@ void advectParticles(GLuint vbo, cData *v, int dx, int dy, float dt)
     dim3 grid((dx/TILEX)+(!(dx%TILEX)?0:1), (dy/TILEY)+(!(dy%TILEY)?0:1));
     dim3 tids(TIDSX, TIDSY);
 
+#ifndef OPTIMUS
     cData *p;
     cudaGraphicsMapResources(1, &cuda_vbo_resource, 0);
     getLastCudaError("cudaGraphicsMapResources failed");
@@ -364,10 +371,18 @@ void advectParticles(GLuint vbo, cData *v, int dx, int dy, float dt)
     cudaGraphicsResourceGetMappedPointer((void **)&p, &num_bytes,
                                          cuda_vbo_resource);
     getLastCudaError("cudaGraphicsResourceGetMappedPointer failed");
+#else
+	cData *p = particles_gpu;
+#endif
 
     advectParticles_k<<<grid, tids>>>(p, v, dx, dy, dt, TILEY/TIDSY, tPitch);
     getLastCudaError("advectParticles_k failed.");
 
+#ifndef OPTIMUS
     cudaGraphicsUnmapResources(1, &cuda_vbo_resource, 0);
     getLastCudaError("cudaGraphicsUnmapResources failed");
+#else
+    // Update host particles array.
+    cudaMemcpy(particles, particles_gpu, sizeof(cData) * DS, cudaMemcpyDeviceToHost);
+#endif
 }

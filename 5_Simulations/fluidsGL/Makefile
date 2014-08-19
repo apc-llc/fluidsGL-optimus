@@ -33,6 +33,10 @@
 #
 ################################################################################
 
+# Compile for system with primary NVIDIA GPU or for Optimus
+# (primary Intel GPU, secondary NVIDIA GPU), without bumblebee
+OPTIMUS ?=
+
 # Location of the CUDA Toolkit
 CUDA_PATH ?= "/opt/cuda"
 
@@ -75,6 +79,9 @@ NVCC := $(CUDA_PATH)/bin/nvcc -ccbin $(GCC)
 
 # internal flags
 NVCCFLAGS   := -m${OS_SIZE}
+ifeq ($(OPTIMUS),1)
+NVCCFLAGS   += -DOPTIMUS
+endif
 CCFLAGS     :=
 LDFLAGS     :=
 
