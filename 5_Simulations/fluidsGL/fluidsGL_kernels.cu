@@ -95,8 +95,8 @@ __global__ void
 addForces_k(cData *v, int dx, int dy, int spx, int spy, float fx, float fy, int r, size_t pitch)
 {
 
-    int tx = threadIdx.x;
-    int ty = threadIdx.y;
+    int tx = blockIdx.x;
+    int ty = threadIdx.x;
     cData *fj = (cData *)((char *)v + (ty + spy) * pitch) + tx + spx;
 
     cData vterm = *fj;
@@ -307,10 +307,7 @@ advectParticles_k(cData *part, cData *v, int dx, int dy,
 extern "C"
 void addForces(cData *v, int dx, int dy, int spx, int spy, float fx, float fy, int r)
 {
-
-    dim3 tids(2*r+1, 2*r+1);
-
-    addForces_k<<<1, tids>>>(v, dx, dy, spx, spy, fx, fy, r, tPitch);
+    addForces_k<<<2*r+1, 2*r+1>>>(v, dx, dy, spx, spy, fx, fy, r, tPitch);
     getLastCudaError("addForces_k failed.");
 }
 
