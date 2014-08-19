@@ -295,6 +295,27 @@ void initParticles(cData *p, int dx, int dy)
             p[i*dx+j].y = (i+0.5f+(myrand() - 0.5f))/dy;
         }
     }
+    
+    unsigned char* data;
+    unsigned int width, height;
+    bool loaded = sdkLoadPPM4ub("data/usi.ppm", &data, &width, &height);
+    if (!loaded) return;
+    
+    const char* no_label = getenv("NO_LABEL");
+    if (!no_label)
+    {
+        const int nchannels = 4;
+        for (int j = 0; j < height; j++)
+    	    for (int i = 0; i < width; i++)
+            {
+                unsigned char* pixel = &data[nchannels * (width * j + i)];
+                if ((pixel[0] == 0) && (pixel[1] == 0) && (pixel[2] == 0))
+                {
+                    p[j*dx+i].x = 0;
+                    p[j*dx+i].y = 0;
+                }
+            }
+    }
 }
 
 void keyboard(unsigned char key, int x, int y)
