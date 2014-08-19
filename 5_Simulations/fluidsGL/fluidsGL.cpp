@@ -161,7 +161,8 @@ void display(void)
 
     // render points from vertex buffer
     glClear(GL_COLOR_BUFFER_BIT);
-    glColor4f(0,1,0,0.5f);
+    glColor4f(1.f/256*246, 1.f/256*146, 1.f/256*72, 0.5f);
+    //glColor4f(0,1,0,0.5f);
     glPointSize(1);
     glEnable(GL_POINT_SMOOTH);
     glEnable(GL_BLEND);
@@ -286,11 +287,9 @@ float myrand(void)
 
 void initParticles(cData *p, int dx, int dy)
 {
-    int i, j;
-
-    for (i = 0; i < dy; i++)
+    for (int i = 0; i < dy; i++)
     {
-        for (j = 0; j < dx; j++)
+        for (int j = 0; j < dx; j++)
         {
             p[i*dx+j].x = (j+0.5f+(myrand() - 0.5f))/dx;
             p[i*dx+j].y = (i+0.5f+(myrand() - 0.5f))/dy;
@@ -401,16 +400,6 @@ void cleanup(void)
     glDeleteBuffersARB(1, &vbo);
 
     sdkDeleteTimer(&timer);
-
-    if (g_bExitESC)
-    {
-        // cudaDeviceReset causes the driver to clean up all state. While
-        // not mandatory in normal operation, it is good practice.  It is also
-        // needed to ensure correct operation when the application is being
-        // profiled. Calling cudaDeviceReset causes all profile data to be
-        // flushed before the application exits
-        checkCudaErrors(cudaDeviceReset());
-    }
 }
 
 int initGL(int *argc, char **argv)
