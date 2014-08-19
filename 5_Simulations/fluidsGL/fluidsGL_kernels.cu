@@ -39,8 +39,8 @@ extern struct cudaGraphicsResource *cuda_vbo_resource; // handles OpenGL-CUDA ex
 extern size_t tPitch;
 extern cufftHandle planr2c;
 extern cufftHandle planc2r;
-extern cData *vxfield = NULL;
-extern cData *vyfield = NULL;
+extern cData *vxfield;
+extern cData *vyfield;
 
 #ifdef OPTIMUS
 extern cData *particles; // particle positions in host memory
