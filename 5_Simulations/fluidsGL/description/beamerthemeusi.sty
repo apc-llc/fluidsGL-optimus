@@ -1,0 +1,220 @@
+% Dmitry Mikushin, USI Lugano, dmitry.mikushin@usi.ch,
+% using portions of original style file by Tom Cashman
+%
+% IMPORTANT NOTICE:
+%
+% The USI logo is unique; it is authorized for use only by employees of the
+% Università della Svizzera italiana for work-related projects; others can use them
+% ONLY with prior authorization (contact: press@usi.ch).
+%
+% http://www.press.usi.ch/en/corporate-design/corporate-design-stampa.htm
+%
+% This style file unofficially mimics the design theme of Università della Svizzera italiana.
+
+\DeclareOptionBeamer{compress}{\beamer@compresstrue}
+\ProcessOptionsBeamer
+
+\mode<presentation>
+
+\RequirePackage{tikz}
+\RequirePackage{lmodern}
+
+\setbeamertemplate{sidebar right}{}
+
+\definecolor{usiyellow}{RGB}{254,231,85}
+
+\setbeamertemplate{frametitle}
+{%
+}
+
+\defbeamertemplate{itemize item}{smallsquare}{\raisebox{0.3ex}{\hbox{\vrule width 0.7ex height 0.7ex}}}
+\defbeamertemplate{itemize subitem}{smallsquare}{\small\raisebox{0.3ex}{\hbox{\vrule width 0.7ex height 0.7ex}}}
+\defbeamertemplate{itemize subsubitem}{smallsquare}{\small\raisebox{0.3ex}{\hbox{\vrule width 0.7ex height 0.7ex}}}
+\setbeamertemplate{itemize items}[smallsquare]
+
+\setbeamertemplate{title page}
+{
+  \begin{tikzpicture}[remember picture,overlay] 
+    \node [xshift=0cm,yshift=0cm] at (current page.center)
+    {\includegraphics[width=\paperwidth,height=\paperheight]{figures/background}};
+  \end{tikzpicture}%
+  \vskip115pt
+  \begin{minipage}{0.5cm}
+    \hskip0.5cm
+  \end{minipage}%
+  \begin{minipage}{10cm}
+    \usebeamerfont{title}{\huge\inserttitle}\par%
+    \ifx\insertsubtitle\@empty%
+    \else%
+      \vskip0.25em%
+      {\usebeamerfont{subtitle}\usebeamercolor[fg]{subtitle}\insertsubtitle\par}%
+    \fi%     
+    \usebeamerfont{author}\textcolor{white}{\insertauthor}
+    \vskip14pt
+    {\usebeamerfont{subtitle} Inventory: 20"+ display, desk (2-person class desk size), desk stand for A2 poster with annotation, GPU-equipped PC with wireless adapter and display connection cable, Android touchpad, sample GPU card.}
+  \end{minipage}%
+  \begin{minipage}{0.75cm}
+    \hskip0.75cm
+  \end{minipage}%
+  \begin{minipage}{8.5cm}
+    The booth intends to introduce general audience into the basics of fluid dynamics. Interactive computer model simulates the behavior of non-reactive substance injected into the fluid by example of coffee and milk. The fluid is visualized on large wall display and small touchscreen. Initially the simulated substance is in steady state. Attendees are invited to introduce external force into the model by sliding the touchscreen, e.g. a spoon mixing gesture. In response, the model shall visualize the changing fluid state.
+  \end{minipage}%
+  \vskip25pt
+  \begin{minipage}{0.5cm}
+    \hskip0.5cm
+  \end{minipage}%
+  \begin{minipage}{19.25cm}
+    \includegraphics[width=19.25cm]{figures/booth}
+  \end{minipage}%
+}
+
+\useoutertheme{infolines}
+%\useoutertheme{split}
+\useinnertheme{rectangles}
+\setbeamertemplate{headline}{} % removes the headline that infolines inserts
+
+\usecolortheme{whale}
+%\usecolortheme{orchid}
+
+\setbeamerfont{block title}{size={}}
+
+\definecolor{usi@yellow}{RGB}{254, 231, 85}
+
+\setbeamercolor{author in head/foot}{bg=white,fg=white}
+\setbeamercolor{title in head/foot}{bg=usi@yellow,fg=white}
+\setbeamercolor{date in head/foot}{bg=white,fg=white}
+\setbeamercolor{title}{bg={},fg=white}
+\setbeamercolor{institute}{fg=white}
+\setbeamercolor{frametitle}{bg=white,fg=white}
+\setbeamercolor{author}{fg=white}
+\setbeamercolor{date}{fg=white}
+\setbeamercolor{item}{fg=white}
+\setbeamercolor{normal text}{fg=white}
+\setbeamercolor{math text}{fg=white}
+
+\usepackage{comment}
+\usepackage{tikz}
+\usepackage{listingsutf8}
+\usepackage{xcolor}
+\usepackage{beramono}
+\usepackage{polyglossia}
+
+\defaultfontfeatures{Scale=MatchLowercase, Mapping=tex-text}
+
+\usetikzlibrary{shapes,arrows}
+\usetikzlibrary{shadows}
+
+\setmainfont{PT Sans Caption}
+\setsansfont{PT Sans}
+%\setmonofont{PT Mono}
+
+\lstset{
+    inputencoding=utf8,
+%    backgroundcolor=\color{white},
+    tabsize=4,
+    rulecolor=,
+    upquote=true,
+%    aboveskip={1.5\baselineskip},
+    columns=fixed,
+    showstringspaces=false,
+    extendedchars=true,
+    breaklines=true,
+    prebreak = \raisebox{0ex}[0ex][0ex]{\ensuremath{\hookleftarrow}},
+    frame=single,
+    showtabs=false,
+    showspaces=false,
+    showstringspaces=false,
+    basicstyle=\scriptsize\ttfamily,
+    identifierstyle=\ttfamily,
+    keywordstyle=\ttfamily\color[rgb]{0,0,1},
+    commentstyle=\ttfamily\color[rgb]{0.133,0.545,0.133},
+    stringstyle=\ttfamily\color[rgb]{0.627,0.126,0.941},
+}
+
+\makeatletter
+\lstdefinelanguage{llvm}{
+  morecomment = [l]{;},
+  morestring=[b]", 
+  sensitive = true,
+  classoffset=0, keywordstyle=\ttfamily\color{blue},
+  morekeywords={
+    define, declare, global, constant,
+    internal, external, private,
+    linkonce, linkonce_odr, weak, weak_odr, appending,
+    common, extern_weak,
+    thread_local, dllimport, dllexport,
+    hidden, protected, default,
+    except, deplibs,
+    volatile, fastcc, coldcc, cc, ccc,
+    x86_stdcallcc, x86_fastcallcc,
+    ptx_kernel, ptx_device,
+    signext, zeroext, inreg, sret, nounwind, noreturn,
+    nocapture, byval, nest, readnone, readonly, noalias, uwtable,
+    inlinehint, noinline, alwaysinline, optsize, ssp, sspreq,
+    noredzone, noimplicitfloat, naked, alignstack,
+    module, asm, align, tail, to,
+    addrspace, section, alias, sideeffect, c, gc,
+    target, datalayout, triple,
+    blockaddress, attributes, metadata,
+  },
+  classoffset=1, keywordstyle=\ttfamily\color{purple},
+  morekeywords={
+    fadd, sub, fsub, mul, fmul,
+    sdiv, udiv, fdiv, srem, urem, frem,
+    and, or, xor,
+    icmp, fcmp,
+    eq, ne, ugt, uge, ult, ule, sgt, sge, slt, sle,
+    oeq, ogt, oge, olt, ole, one, ord, ueq, ugt, uge,
+    ult, ule, une, uno,
+    nuw, nsw, exact, inbounds,
+    phi, call, select, shl, lshr, ashr, va_arg,
+    trunc, zext, sext,
+    fptrunc, fpext, fptoui, fptosi, uitofp, sitofp,
+    ptrtoint, inttoptr, bitcast,
+    ret, br, indirectbr, switch, invoke, unwind, unreachable,
+    malloc, alloca, free, load, store, getelementptr,
+    extractelement, insertelement, shufflevector,
+    extractvalue, insertvalue,
+  },
+  alsoletter={\%.},
+  keywordsprefix={\%},
+}
+\makeatother
+
+\makeatletter
+\newenvironment{btHighlight}[1][]
+{\begingroup\tikzset{bt@Highlight@par/.style={#1}}\begin{lrbox}{\@tempboxa}}
+{\end{lrbox}\bt@HL@box[bt@Highlight@par]{\@tempboxa}\endgroup}
+
+\newcommand\btHL[1][]{%
+  \begin{btHighlight}[#1]\bgroup\aftergroup\bt@HL@endenv%
+}
+\def\bt@HL@endenv{%
+  \end{btHighlight}%   
+  \egroup
+}
+\newcommand{\bt@HL@box}[2][]{%
+  \tikz[#1]{%
+    \pgfpathrectangle{\pgfpoint{1pt}{0pt}}{\pgfpoint{\wd #2}{\ht #2}}%
+    \pgfusepath{use as bounding box}%
+    \node[anchor=base west, fill=usi@yellow,outer sep=0pt,inner xsep=1pt, inner ysep=0pt, rounded corners=3pt, minimum height=\ht\strutbox+1pt,#1]{\raisebox{1pt}{\strut}\strut\usebox{#2}};
+  }%
+}
+\makeatother
+
+\lstdefinestyle{markable}{
+    moredelim=**[is][\btHL]{`}{`},
+}
+
+
+\makeatletter
+\setbeamertemplate{footline}
+{
+}
+\makeatother
+
+
+\hypersetup{colorlinks,linkcolor=blue,urlcolor=blue}
+
+\mode
+<all>
