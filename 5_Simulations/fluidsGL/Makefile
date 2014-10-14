@@ -126,10 +126,10 @@ endif
 
 # Debug build flags
 ifeq ($(dbg),1)
-      NVCCFLAGS += -g -G
+      NVCCFLAGS += -g -O0
       TARGET := debug
 else
-      NVCCFLAGS += -g
+      NVCCFLAGS += -g -O3
       TARGET := release
 endif
 

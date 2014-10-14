@@ -217,7 +217,7 @@ void* broadcast_listener(void* args)
 	// Listen to the broadcast and update the corresponding data
 	// with the received packets.
 	client->listen(particles);
-	
+
 	return NULL;
 }
 

@@ -13,6 +13,8 @@
 #include <arpa/inet.h>
 #include <vector>
 
+#include "half.hpp"
+
 #ifndef TRUE
 #define TRUE 1
 #endif
@@ -132,8 +134,10 @@ void UdpBroadcastClient::listen(char* signal)
 		//printf("ipacket = %d\n", ipacket);
 
 		packet += sizeof(unsigned int);
-		memcpy(signal + (ipacket - 1) * UdpBroadcastServer::PacketSize, packet,
-			UdpBroadcastServer::PacketSize);
+		half_float::half* src = (half_float::half*)packet;
+		float* dst = (float*)(signal + 2 * (ipacket - 1) * UdpBroadcastServer::PacketSize);
+		for (int i = 0; i < UdpBroadcastServer::PacketSize / sizeof(half_float::half); i++)
+			dst[i] = half_float::half_cast<float, std::round_to_nearest>(src[i]);
 	}
 }
 

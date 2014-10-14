@@ -35,7 +35,7 @@ void UdpBroadcastServer::initialize(const char *sv_addr, const char *bc_addr)
  
 	// Form the server address
 	int len_srvr = sizeof(adr_srvr);
-
+#if 1
 	int z = mkaddr(&adr_srvr,  /* Returned address */
 		       &len_srvr,      /* Returned length */
 		       sv_addr,        /* Input string addr */
@@ -43,7 +43,12 @@ void UdpBroadcastServer::initialize(const char *sv_addr, const char *bc_addr)
 
 	if (z == -1)
 		displayError("Bad server address");
- 
+#endif
+#if 0
+	adr_srvr.sin_family = AF_INET;
+    adr_srvr.sin_port = htons(9097);
+    adr_srvr.sin_addr.s_addr = htonl(INADDR_ANY);
+#endif
 	// Form the broadcast address
 	len_bc = sizeof(adr_bc); 
 	z = mkaddr(&adr_bc,  /* Returned address */
@@ -78,17 +83,29 @@ void UdpBroadcastServer::initialize(const char *sv_addr, const char *bc_addr)
 
 UdpBroadcastServer::UdpBroadcastServer(const char *sv_addr, const char *bc_addr)
 {
+	if (PacketSize % sizeof(float))
+	{
+		fprintf(stderr, "PacketSize must be a multiply of sizeof(float)\n");
+		exit(1);
+	}
+
 	initialize(sv_addr, bc_addr);
 }
 
 UdpBroadcastServer::UdpBroadcastServer()
 {
+	if (PacketSize % sizeof(float))
+	{
+		fprintf(stderr, "PacketSize must be a multiply of sizeof(float)\n");
+		exit(1);
+	}
+
 	initialize("127.0.0:*", "127.255.255.2 9097");
 }
 
 using namespace std;
 
-void UdpBroadcastServer::broadcast(char* msg, int width, int height, int szpoint)
+void UdpBroadcastServer::broadcast(char* packets, int width, int height, int szpoint)
 {
 	// Send the zero packet, which shall contain the screen dimensions.
 	{
@@ -110,26 +127,22 @@ void UdpBroadcastServer::broadcast(char* msg, int width, int height, int szpoint
 			displayError("sendto()");
 	}
 
-	// Split broadcast message into smaller packets,
-	// each assigned with an index for ordered collection.
-	int size = width * height * szpoint;
-	for (int i = 0, ipacket = 1; i < size; i += UdpBroadcastServer::PacketSize, ipacket++)
+	int npackets = sizeof(float) * width * height / UdpBroadcastServer::PacketSize;
+	if (sizeof(float) * width * height % UdpBroadcastServer::PacketSize)
+		npackets++;
+
+	for (int i = 0; i < npackets; i++)
 	{
-		char* packet = msg + i - sizeof(unsigned int);
-		unsigned int* index = (unsigned int*)packet;
-		unsigned int tmp = *index;
-		*index = ipacket;
-	
+		char* packet = packets + i * (UdpBroadcastServer::PacketSize + sizeof(unsigned int));
+		
 		int z = sendto(s, packet,
 			UdpBroadcastServer::PacketSize + sizeof(unsigned int),
 			0, (struct sockaddr*)&adr_bc, len_bc);
-	
+
 		if (z == -1)
 			displayError("sendto()");
 
-		printf("ipacket = %d\n", ipacket);
-		
-		*index = tmp;
+		//printf("ipacket = %d\n", i + 1);
 	}
 }
 

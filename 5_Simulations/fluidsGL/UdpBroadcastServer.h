@@ -20,7 +20,8 @@ class UdpBroadcastServer
 
 public :
 
-	static const unsigned int PacketSize = 32768;
+	// Must be a multiplier of sizeof(float).
+	static const unsigned int PacketSize = 8192 * sizeof(float);
 
 	UdpBroadcastServer(const char *sv_addr, const char *bc_addr);
 

@@ -79,8 +79,10 @@ bool IsOpenGLAvailable(const char *appName)
 #include "fluidsGL_kernels.h"
 
 #ifdef BROADCAST
+#include "half.hpp"
 #include "UdpBroadcastServer.h"
 #include <memory>
+#include <pthread.h>
 #endif
 
 #define MAX_EPSILON_ERROR 1.0f
@@ -120,6 +122,9 @@ struct cudaGraphicsResource *cuda_vbo_resource; // handles OpenGL-CUDA exchange
 static cData *particles = NULL; // particle positions in host memory
 #else
 cData *particles = NULL; // particle positions in host memory
+#if defined(BROADCAST)
+char *packets = NULL; // particle packets for client broadcast
+#endif
 cData *particles_gpu = NULL; // particle positions in device memory
 #endif
 static int lastx = 0, lasty = 0;
@@ -213,9 +218,7 @@ void display(void)
         fpsLimit = (int)MAX(ifps, 1.f);
         sdkResetTimer(&timer);
     }
-#ifdef BROADCAST    
-    server->broadcast((char*)particles, DIM, DIM, sizeof(cData));
-#endif
+
     glutPostRedisplay();
 }
 
@@ -456,7 +459,10 @@ void cleanup(void)
 
     // Free all host and device resources
     free(hvfield);
-    free((char*)particles - sizeof(unsigned int));
+    free(particles);
+#ifdef BROADCAST
+	free(packets);
+#endif
     cudaFree(dvfield);
     cudaFree(vxfield);
     cudaFree(vyfield);
@@ -505,6 +511,40 @@ int initGL(int *argc, char **argv)
     return true;
 }
 
+#ifdef BROADCAST
+void* broadcaster(void* args)
+{
+	int npackets = sizeof(float) * DIM * DIM / UdpBroadcastServer::PacketSize;
+	if (sizeof(float) * DIM * DIM % UdpBroadcastServer::PacketSize)
+		npackets++;
+
+	for (;;)
+	{	
+		// Split broadcast message into smaller packets,
+		// each assigned with an index for ordered collection.
+		// Compress float to half-float to save bandwidth.
+		for (int i = 0; i < npackets; i++)
+		{
+			char* packet = packets + i * (UdpBroadcastServer::PacketSize + sizeof(unsigned int));
+			unsigned int* index = (unsigned int*)packet;
+			*index = i + 1;
+			float* dst = (float*)(index + 1);
+			cData* src = (cData*)((char*)particles + 2 * i * UdpBroadcastServer::PacketSize);
+			for (int j = 0, e = UdpBroadcastServer::PacketSize / sizeof(float); j != e; j++)
+			{
+				half_float::half* halfs = (half_float::half*)&dst[j];
+				halfs[0] = half_float::half_cast<half_float::half,std::round_to_nearest>(src[j].x);
+				halfs[1] = half_float::half_cast<half_float::half,std::round_to_nearest>(src[j].y);
+			}
+		}
+
+		// Broadcast the current particles array to listeners.
+	    server->broadcast(packets, DIM, DIM, sizeof(cData));
+   	}
+	
+	return NULL;
+}
+#endif
 
 int main(int argc, char **argv)
 {
@@ -560,12 +600,18 @@ int main(int argc, char **argv)
     bindTexture();
 
     // Create particle array in host memory
-    // Extra sizeof(unsigned int) - to keep the size of UDP broadcast package.
-    // Extra packet size - to pad broadcast messages.
-    particles = (cData *)malloc(sizeof(cData) * DS +
-    	sizeof(unsigned int) + UdpBroadcastServer::PacketSize);
-    particles = (cData *)((char*)particles + sizeof(unsigned int));
+    particles = (cData *)malloc(sizeof(cData) * DS);
     memset(particles, 0, sizeof(cData) * DS);
+
+#if defined(BROADCAST)
+	// Create additional space to store particle packets
+	// for broadcasting.
+	int npackets = sizeof(float) * DIM * DIM / UdpBroadcastServer::PacketSize;
+	if (sizeof(float) * DIM * DIM % UdpBroadcastServer::PacketSize)
+		npackets++;
+	packets = (char*)malloc(npackets *
+		(UdpBroadcastServer::PacketSize + sizeof(unsigned int)));
+#endif
 
     initParticles(particles, DIM, DIM);
 
@@ -630,6 +676,10 @@ int main(int argc, char **argv)
 			bc_addr = argv[1];
 
 		server.reset(new UdpBroadcastServer(sv_addr, bc_addr));
+
+		// Broadcast the particles state in the separate thread.
+		pthread_t tid;
+		pthread_create(&tid, NULL, &broadcaster, NULL);
 #endif
 #if defined (__APPLE__) || defined(MACOSX)
         atexit(cleanup);
