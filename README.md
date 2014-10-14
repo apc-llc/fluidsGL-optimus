@@ -7,7 +7,7 @@ $ ../../bin/x86_64/linux/release/fluidsGL
 $ ../../bin/x86_64/linux/release/fluidsGL_client
 ```
 
-Assuming the **server** address is `192.168.0.61`, **client** address is `192.168.0.10`, and port 9097 is free and not firewalled, the following commands have to be executed:
+Assuming the **server** address is `192.168.0.61`, the **client** address is `192.168.0.10`, and the *port* 9097 is free and not firewalled, the following commands have to be executed:
 
 * On server (broadcast to client subnet consisting of one host from server's address within this network):
 ```
