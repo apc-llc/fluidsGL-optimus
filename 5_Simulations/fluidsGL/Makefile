@@ -35,7 +35,10 @@
 
 # Compile for system with primary NVIDIA GPU or for Optimus
 # (primary Intel GPU, secondary NVIDIA GPU), without bumblebee
-OPTIMUS ?=
+OPTIMUS ?= 1
+
+# Broadcast signal to the specified socket for output visualization
+BROADCAST ?= 1
 
 # Location of the CUDA Toolkit
 CUDA_PATH ?= "/opt/cuda"
@@ -82,6 +85,9 @@ NVCCFLAGS   := -m${OS_SIZE}
 ifeq ($(OPTIMUS),1)
 NVCCFLAGS   += -DOPTIMUS
 endif
+ifeq ($(BROADCAST),1)
+NVCCFLAGS   += -DBROADCAST
+endif
 CCFLAGS     :=
 LDFLAGS     :=
 
@@ -123,6 +129,7 @@ ifeq ($(dbg),1)
       NVCCFLAGS += -g -G
       TARGET := debug
 else
+      NVCCFLAGS += -g
       TARGET := release
 endif
 
@@ -139,7 +146,7 @@ ALL_LDFLAGS += $(addprefix -Xlinker ,$(EXTRA_LDFLAGS))
 
 # Common includes and paths for CUDA
 INCLUDES  := -I../../common/inc
-LIBRARIES :=
+LIBRARIES := -lpthread
 
 ################################################################################
 
@@ -178,15 +185,32 @@ LIBRARIES += -lcufft
 # Target rules
 all: build
 
-build: fluidsGL
+build: fluidsGL fluidsGL_client
 
-fluidsGL.o:fluidsGL.cpp
+fluidsGL.o:fluidsGL.cpp UdpBroadcastServer.h
 	$(EXEC) $(NVCC) $(INCLUDES) $(ALL_CCFLAGS) $(GENCODE_FLAGS) -o $@ -c $<
 
 fluidsGL_kernels.o:fluidsGL_kernels.cu
 	$(EXEC) $(NVCC) $(INCLUDES) $(ALL_CCFLAGS) $(GENCODE_FLAGS) -o $@ -c $<
 
-fluidsGL: fluidsGL.o fluidsGL_kernels.o
+UdpBroadcastServer.o: UdpBroadcastServer.cpp UdpBroadcastServer.h
+	$(EXEC) $(NVCC) $(INCLUDES) $(ALL_CCFLAGS) $(GENCODE_FLAGS) -o $@ -c $<	
+
+mkaddr.o: mkaddr.c
+	$(EXEC) $(NVCC) $(INCLUDES) $(ALL_CCFLAGS) $(GENCODE_FLAGS) -o $@ -c $<	
+
+fluidsGL: fluidsGL.o fluidsGL_kernels.o UdpBroadcastServer.o mkaddr.o
+	$(EXEC) $(NVCC) $(ALL_LDFLAGS) $(GENCODE_FLAGS) -o $@ $+ $(LIBRARIES)
+	$(EXEC) mkdir -p ../../bin/$(OS_ARCH)/$(OSLOWER)/$(TARGET)$(if $(abi),/$(abi))
+	$(EXEC) cp $@ ../../bin/$(OS_ARCH)/$(OSLOWER)/$(TARGET)$(if $(abi),/$(abi))
+
+fluidsGL_client.o:fluidsGL_client.cpp UdpBroadcastClient.h
+	$(EXEC) $(NVCC) $(INCLUDES) $(ALL_CCFLAGS) $(GENCODE_FLAGS) -o $@ -c $<
+
+UdpBroadcastClient.o: UdpBroadcastClient.cpp UdpBroadcastClient.h UdpBroadcastServer.h
+	$(EXEC) $(NVCC) $(INCLUDES) $(ALL_CCFLAGS) $(GENCODE_FLAGS) -o $@ -c $<	
+
+fluidsGL_client: fluidsGL_client.o UdpBroadcastClient.o mkaddr.o
 	$(EXEC) $(NVCC) $(ALL_LDFLAGS) $(GENCODE_FLAGS) -o $@ $+ $(LIBRARIES)
 	$(EXEC) mkdir -p ../../bin/$(OS_ARCH)/$(OSLOWER)/$(TARGET)$(if $(abi),/$(abi))
 	$(EXEC) cp $@ ../../bin/$(OS_ARCH)/$(OSLOWER)/$(TARGET)$(if $(abi),/$(abi))
@@ -195,7 +219,8 @@ run: build
 	$(EXEC) ./fluidsGL
 
 clean:
-	rm -f fluidsGL fluidsGL.o fluidsGL_kernels.o
+	rm -f fluidsGL fluidsGL_client *.o
 	rm -rf ../../bin/$(OS_ARCH)/$(OSLOWER)/$(TARGET)$(if $(abi),/$(abi))/fluidsGL
+	rm -rf ../../bin/$(OS_ARCH)/$(OSLOWER)/$(TARGET)$(if $(abi),/$(abi))/fluidsGL_client
 
 clobber: clean

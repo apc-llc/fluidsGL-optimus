@@ -44,6 +44,9 @@ extern cData *vyfield;
 
 #ifdef OPTIMUS
 extern cData *particles; // particle positions in host memory
+#endif
+
+#if defined(OPTIMUS) || defined(BROADCAST)
 extern cData *particles_gpu; // particle positions in device memory
 #endif
 
@@ -378,7 +381,9 @@ void advectParticles(GLuint vbo, cData *v, int dx, int dy, float dt)
 #ifndef OPTIMUS
     cudaGraphicsUnmapResources(1, &cuda_vbo_resource, 0);
     getLastCudaError("cudaGraphicsUnmapResources failed");
-#else
+#endif
+
+#if defined(OPTIMUS) || defined(BROADCAST)
     // Update host particles array.
     cudaMemcpy(particles, particles_gpu, sizeof(cData) * DS, cudaMemcpyDeviceToHost);
 #endif

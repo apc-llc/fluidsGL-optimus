@@ -78,6 +78,11 @@ bool IsOpenGLAvailable(const char *appName)
 #include "defines.h"
 #include "fluidsGL_kernels.h"
 
+#ifdef BROADCAST
+#include "UdpBroadcastServer.h"
+#include <memory>
+#endif
+
 #define MAX_EPSILON_ERROR 1.0f
 
 const char *sSDKname = "fluidsGL";
@@ -111,7 +116,7 @@ StopWatchInterface *timer = NULL;
 // Particle data
 GLuint vbo = 0;                 // OpenGL vertex buffer object
 struct cudaGraphicsResource *cuda_vbo_resource; // handles OpenGL-CUDA exchange
-#ifndef OPTIMUS
+#if !defined(OPTIMUS) && !defined(BROADCAST)
 static cData *particles = NULL; // particle positions in host memory
 #else
 cData *particles = NULL; // particle positions in host memory
@@ -131,6 +136,11 @@ bool g_bExitESC = false;
 
 // CheckFBO/BackBuffer class objects
 CheckRender       *g_CheckRender = NULL;
+
+// Visualization broadcasting server
+#ifdef BROADCAST
+std::auto_ptr<UdpBroadcastServer> server;
+#endif
 
 void autoTest();
 
@@ -197,13 +207,15 @@ void display(void)
     {
         char fps[256];
         float ifps = 1.f / (sdkGetAverageTimerValue(&timer) / 1000.f);
-        sprintf(fps, "Cuda/GL Stable Fluids (%d x %d): %3.1f fps", DIM, DIM, ifps);
+        sprintf(fps, "Caffe Macchiato / Stable Fluids (%d x %d): %3.1f fps", DIM, DIM, ifps);
         glutSetWindowTitle(fps);
         fpsCount = 0;
         fpsLimit = (int)MAX(ifps, 1.f);
         sdkResetTimer(&timer);
     }
-
+#ifdef BROADCAST    
+    server->broadcast((char*)particles, DIM, DIM, sizeof(cData));
+#endif
     glutPostRedisplay();
 }
 
@@ -337,7 +349,9 @@ void keyboard(unsigned char key, int x, int y)
 #ifndef OPTIMUS
             cudaGraphicsUnregisterResource(cuda_vbo_resource);
             getLastCudaError("cudaGraphicsUnregisterBuffer failed");
-#else
+#endif
+
+#if defined(OPTIMUS) || defined(BROADCAST)
             cudaMemcpy(particles_gpu, particles, sizeof(cData) * DS, cudaMemcpyHostToDevice);
 #endif
 
@@ -410,7 +424,7 @@ void cleanup(void)
 
     // Free all host and device resources
     free(hvfield);
-    free(particles);
+    free((char*)particles - sizeof(unsigned int));
     cudaFree(dvfield);
     cudaFree(vxfield);
     cudaFree(vyfield);
@@ -515,12 +529,16 @@ int main(int argc, char **argv)
     bindTexture();
 
     // Create particle array in host memory
-    particles = (cData *)malloc(sizeof(cData) * DS);
+    // Extra sizeof(unsigned int) - to keep the size of UDP broadcast package.
+    // Extra packet size - to pad broadcast messages.
+    particles = (cData *)malloc(sizeof(cData) * DS +
+    	sizeof(unsigned int) + UdpBroadcastServer::PacketSize);
+    particles = (cData *)((char*)particles + sizeof(unsigned int));
     memset(particles, 0, sizeof(cData) * DS);
 
     initParticles(particles, DIM, DIM);
 
-#ifdef OPTIMUS
+#if defined(OPTIMUS) || defined(BROADCAST)
     // Create particle array in device memory
     cudaMalloc((void **)&particles_gpu, sizeof(cData) * DS);
     cudaMemcpy(particles_gpu, particles, sizeof(cData) * DS, cudaMemcpyHostToDevice);
@@ -568,6 +586,20 @@ int main(int argc, char **argv)
     }
     else
     {
+#ifdef BROADCAST
+		const char *sv_addr = "127.0.0:*";
+		const char *bc_addr = "127.255.255.2:9097";
+
+		// Server address
+		if (argc > 2)
+			sv_addr = argv[2];
+
+		// Broadcast address
+		if (argc > 1)
+			bc_addr = argv[1];
+
+		server.reset(new UdpBroadcastServer(sv_addr, bc_addr));
+#endif
 #if defined (__APPLE__) || defined(MACOSX)
         atexit(cleanup);
 #else
