@@ -206,11 +206,11 @@ fluidsGL: fluidsGL.o fluidsGL_kernels.o UdpBroadcastServer.o mkaddr.o
 	$(EXEC) mkdir -p ../../bin/$(OS_ARCH)/$(OSLOWER)/$(TARGET)$(if $(abi),/$(abi))
 	$(EXEC) cp $@ ../../bin/$(OS_ARCH)/$(OSLOWER)/$(TARGET)$(if $(abi),/$(abi))
 
-fluidsGL_client.o:fluidsGL_client.cpp UdpBroadcastClient.h
-	$(EXEC) $(NVCC) $(INCLUDES) $(ALL_CCFLAGS) $(GENCODE_FLAGS) -o $@ -c $<
+fluidsGL_client.o: clients/linux/fluidsGL_client.cpp clients/linux/UdpBroadcastClient.h
+	$(EXEC) $(NVCC) $(INCLUDES) $(ALL_CCFLAGS) $(GENCODE_FLAGS) -I. -o $@ -c $<
 
-UdpBroadcastClient.o: UdpBroadcastClient.cpp UdpBroadcastClient.h UdpBroadcastServer.h
-	$(EXEC) $(NVCC) $(INCLUDES) $(ALL_CCFLAGS) $(GENCODE_FLAGS) -o $@ -c $<	
+UdpBroadcastClient.o: clients/linux/UdpBroadcastClient.cpp clients/linux/UdpBroadcastClient.h UdpBroadcastServer.h
+	$(EXEC) $(NVCC) $(INCLUDES) $(ALL_CCFLAGS) $(GENCODE_FLAGS) -I. -o $@ -c $<	
 
 fluidsGL_client: fluidsGL_client.o UdpBroadcastClient.o mkaddr.o
 	$(EXEC) $(NVCC) $(ALL_LDFLAGS) $(GENCODE_FLAGS) -o $@ $+ $(LIBRARIES)
