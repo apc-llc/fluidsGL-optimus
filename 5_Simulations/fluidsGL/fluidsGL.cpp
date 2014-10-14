@@ -108,7 +108,7 @@ cData *dvfield = NULL;
 static int wWidth  = MAX(512, DIM);
 static int wHeight = MAX(512, DIM);
 
-static int clicked  = 0;
+static int clicked = 0, fullscreen = 0;
 static int fpsCount = 0;
 static int fpsLimit = 1;
 StopWatchInterface *timer = NULL;
@@ -338,6 +338,19 @@ void keyboard(unsigned char key, int x, int y)
             g_bExitESC = true;
             exit(EXIT_SUCCESS);
             break;
+        
+        case 'f':
+        	if (!fullscreen)
+        	{
+        		fullscreen = 1;
+				glutFullScreenToggle();
+			}
+			else
+			{
+				fullscreen = 0;
+				glutLeaveFullScreen();
+			}
+			break;
 
         case 'r':
             memset(hvfield, 0, sizeof(cData) * DS);
@@ -458,7 +471,6 @@ int initGL(int *argc, char **argv)
     glutMouseFunc(click);
     glutMotionFunc(motion);
     glutReshapeFunc(reshape);
-
 
     glewInit();
 

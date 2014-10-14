@@ -63,7 +63,7 @@ static int DS, cData;
 static int wWidth = 0;
 static int wHeight = 0;
 
-static int clicked  = 0;
+static int clicked = 0, fullscreen = 0;
 
 GLuint vbo = 0;                 // OpenGL vertex buffer object
 static char *particles = NULL;  // particle positions in host memory
@@ -123,6 +123,19 @@ void keyboard(unsigned char key, int x, int y)
             g_bExitESC = true;
             exit(EXIT_SUCCESS);
             break;
+
+        case 'f':
+        	if (!fullscreen)
+        	{
+        		fullscreen = 1;
+				glutFullScreenToggle();
+			}
+			else
+			{
+				fullscreen = 0;
+				glutLeaveFullScreen();
+			}
+			break;
 
         case 'r':
             break;
