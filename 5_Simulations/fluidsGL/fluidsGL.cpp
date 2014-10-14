@@ -328,6 +328,25 @@ void initParticles(cData *p, int dx, int dy)
                 }
             }
     }
+#ifdef BROADCAST
+    // Randomly reorder particles to eliminate initial jittering
+    // in UDP client.
+    for (int i = 0; i < dy; i++)
+    {
+        for (int j = 0; j < dx; j++)
+        {
+        	int i_rand = myrand() * (dx - 1);
+        	int j_rand = myrand() * (dy - 1);
+
+        	cData* p0 = &p[j*dx+i];        	
+        	cData* p1 = &p[j_rand*dx+i_rand];
+        	
+        	cData p2 = *p0;
+        	*p0 = *p1;
+        	*p1 = p2;
+        }
+    }
+#endif
 }
 
 void keyboard(unsigned char key, int x, int y)
