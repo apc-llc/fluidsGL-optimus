@@ -41,7 +41,7 @@ OPTIMUS ?= 1
 BROADCAST ?= 1
 
 # Location of the CUDA Toolkit
-CUDA_PATH ?= "/opt/cuda"
+CUDA_PATH ?= "/usr/local/cuda"
 
 OSUPPER = $(shell uname -s 2>/dev/null | tr "[:lower:]" "[:upper:]")
 OSLOWER = $(shell uname -s 2>/dev/null | tr "[:upper:]" "[:lower:]")
@@ -168,7 +168,9 @@ endif
 
 # CUDA code generation flags
 ifneq ($(OS_ARCH),armv7l)
+ifeq ($(DARWIN),)
 GENCODE_SM10    := -gencode arch=compute_10,code=sm_10
+endif
 endif
 GENCODE_SM20    := -gencode arch=compute_20,code=sm_20
 GENCODE_SM30    := -gencode arch=compute_30,code=sm_30
