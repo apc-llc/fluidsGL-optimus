@@ -60,8 +60,8 @@ static int DS, cData;
 
 #define MAX(a,b) ((a) > (b) ? (a) : (b))
 
-static int wWidth  = MAX(512, width);
-static int wHeight = MAX(512, height);
+static int wWidth = 0;
+static int wHeight = 0;
 
 static int clicked  = 0;
 
@@ -97,7 +97,7 @@ void display(void)
     glDisable(GL_DEPTH_TEST);
     glDisable(GL_CULL_FACE);
     glBindBufferARB(GL_ARRAY_BUFFER_ARB, vbo);
-    glBufferDataARB(GL_ARRAY_BUFFER_ARB, sizeof(cData) * DS,
+    glBufferDataARB(GL_ARRAY_BUFFER_ARB, cData * DS,
                     particles, GL_DYNAMIC_DRAW_ARB);
     glVertexPointer(2, GL_FLOAT, 0, NULL);
     glDrawArrays(GL_POINTS, 0, DS);
@@ -210,12 +210,6 @@ void* broadcast_listener(void* args)
 
 int main(int argc, char* argv[])
 {
-    // First initialize OpenGL context.
-    if (false == initGL(&argc, argv))
-    {
-        exit(EXIT_SUCCESS);
-    }
-
 	const char *bc_addr = "127.255.255.2:9097";
 
 	// Broadcast address
@@ -223,6 +217,8 @@ int main(int argc, char* argv[])
 		bc_addr = argv[1];
 
 	client.reset(new UdpBroadcastClient(bc_addr));
+
+	printf("Waiting for the server...\n");
 
 	DisplayConfig config;
 	client->configure(config);
@@ -232,6 +228,15 @@ int main(int argc, char* argv[])
 	DS = width * height;
 	cData = config.szpoint;
 	printf("Dispaly config: %d x %d x %d\n", width, height, cData);
+
+	wWidth  = MAX(512, width);
+	wHeight = MAX(512, height);
+
+    // First initialize OpenGL context.
+    if (false == initGL(&argc, argv))
+    {
+        exit(EXIT_SUCCESS);
+    }
 
     // Create particle array in host memory
     // Extra packet size - to pad broadcast messages.
