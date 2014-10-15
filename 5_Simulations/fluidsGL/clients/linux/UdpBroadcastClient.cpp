@@ -113,7 +113,8 @@ void UdpBroadcastClient::listen(char* signal, double* rate)
 	vector<char> vpacket;
 	vpacket.resize(UdpBroadcastServer::PacketSize + sizeof(unsigned int));
 
-	for (int measure = 1; ; measure++, measure %= 8192)
+	int measure_period = 128;
+	for (int measure = 1; ; measure++, measure %= measure_period)
 	{
 		struct timespec start;
 		if (rate && (measure == 1))
@@ -153,7 +154,7 @@ void UdpBroadcastClient::listen(char* signal, double* rate)
 			clock_gettime(CLOCK_REALTIME, &finish);
 			double time = finish.tv_nsec / 1e9 + finish.tv_sec -
 				start.tv_nsec / 1e9 - start.tv_sec;
-			*rate = vpacket.size() * (8192 - 2) / 1024.0 / 1024.0 / time;
+			*rate = vpacket.size() * (measure_period - 2) / 1024.0 / 1024.0 / time;
 		}
 	}
 }
