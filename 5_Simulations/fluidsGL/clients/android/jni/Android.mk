@@ -7,19 +7,19 @@ LOCAL_PATH := $(call my-dir)
 include $(CLEAR_VARS)
 
 # All the source files to include in this module
-LOCAL_SRC_FILES := jni.c \
+LOCAL_SRC_FILES := jni.cpp \
                    canvas.cpp 
 
-LOCAL_SHARED_LIBRARIES += libffmpeg-prebuild 
+#LOCAL_SHARED_LIBRARIES += libffmpeg-prebuild 
 
 # The name of the module
-LOCAL_MODULE := libdemo
+LOCAL_MODULE := libcaffemacchiato
 
 # Compilation flags
 LOCAL_CFLAGS := -Werror
 
 # Static libraries to link with
-LOCAL_LDLIBS :=   -lGLESv2 -lGLESv1_CM
+LOCAL_LDLIBS := -lGLESv3 -lEGL -lGLESv1_CM
 
 LOCAL_LDLIBS += -L$(SYSROOT)/usr/lib -llog
 

@@ -1,4 +1,4 @@
-package com.example.tenyears;
+package com.example.caffemacchiato;
 
 import javax.microedition.khronos.opengles.GL10;
 
@@ -8,9 +8,6 @@ import android.opengl.GLSurfaceView.Renderer;
 public class RendererWrapper implements Renderer  {
 	@Override
     public void onSurfaceCreated(GL10 gl, javax.microedition.khronos.egl.EGLConfig config) {
-        //GLES20.glClearColor(0.0f, 0.0f, 1.0f, 0.0f);
-		
-		
 		GameLibJNIWrapper.on_surface_created();
     }
  

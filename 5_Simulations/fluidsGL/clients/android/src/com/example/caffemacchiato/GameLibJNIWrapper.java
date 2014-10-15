@@ -1,8 +1,8 @@
-package com.example.tenyears;
+package com.example.caffemacchiato;
 
 public class GameLibJNIWrapper {
     static {
-        System.loadLibrary("demo");
+        System.loadLibrary("caffemacchiato");
         
     }
  
