@@ -109,7 +109,7 @@ void display(void)
     glutSwapBuffers();
 
     char fps[256];
-    sprintf(fps, "Caffe Macchiato / Stable Fluids (%d x %d): broadcast @ %3.1f MB/sec", width, height, connection);
+    sprintf(fps, "Caffe Macchiato / Stable Fluids (%d x %d): broadcast @ %f MB/sec", width, height, connection);
     glutSetWindowTitle(fps);
 
     glutPostRedisplay();
