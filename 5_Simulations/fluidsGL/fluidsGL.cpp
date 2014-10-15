@@ -83,6 +83,7 @@ bool IsOpenGLAvailable(const char *appName)
 #include "UdpBroadcastServer.h"
 #include <memory>
 #include <pthread.h>
+#include <unistd.h>
 #endif
 
 #define MAX_EPSILON_ERROR 1.0f
@@ -539,7 +540,11 @@ void* broadcaster(void* args)
 		}
 
 		// Broadcast the current particles array to listeners.
-	    server->broadcast(packets, DIM, DIM, sizeof(cData));
+		server->broadcast(packets, DIM, DIM, sizeof(cData));
+
+		// Do not send data faster than 30 FPS - does not make sense anyways,
+		// and also does not overheat the network router.
+		usleep(1e6 / 30);
    	}
 	
 	return NULL;
