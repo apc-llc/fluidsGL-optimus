@@ -106,14 +106,22 @@ void UdpBroadcastClient::configure(DisplayConfig& config)
 	printf("One\n");
 }
 
-// Listen to the broadcast the specified amount of milliseconds.
-void UdpBroadcastClient::listen(char* signal)
+// Listen to the broadcast and update the specified array
+// with the signal contents. Optionally report signal rate.
+void UdpBroadcastClient::listen(char* signal, double* rate)
 {
 	vector<char> vpacket;
 	vpacket.resize(UdpBroadcastServer::PacketSize + sizeof(unsigned int));
 
-	for (;;)
+	for (int measure = 1; ; measure++, measure %= 8192)
 	{
+		struct timespec start;
+		if (rate && (measure == 1))
+		{
+			clock_gettime(CLOCK_REALTIME, &start);
+			measure++;
+		}
+	
 		char* packet = &vpacket[0];
 
 		// Wait for a broadcast message
@@ -138,6 +146,15 @@ void UdpBroadcastClient::listen(char* signal)
 		float* dst = (float*)(signal + 2 * (ipacket - 1) * UdpBroadcastServer::PacketSize);
 		for (int i = 0; i < UdpBroadcastServer::PacketSize / sizeof(half_float::half); i++)
 			dst[i] = half_float::half_cast<float, std::round_to_nearest>(src[i]);
+		
+		if (rate && (measure == 0))
+		{
+			struct timespec finish;
+			clock_gettime(CLOCK_REALTIME, &finish);
+			double time = finish.tv_nsec / 1e9 + finish.tv_sec -
+				start.tv_nsec / 1e9 - start.tv_sec;
+			*rate = vpacket.size() * (8192 - 2) / 1024.0 / 1024.0 / time;
+		}
 	}
 }
 

@@ -81,7 +81,7 @@ std::auto_ptr<UdpBroadcastClient> client;
 #include <string.h>
 #include <pthread.h>
 
-double broadcast_rate = 0;
+double connection = 0;
 
 void display(void)
 {
@@ -109,7 +109,7 @@ void display(void)
     glutSwapBuffers();
 
     char fps[256];
-    sprintf(fps, "Caffe Macchiato / Stable Fluids (%d x %d): broadcast @ %3.1f MB/sec", width, height, broadcast_rate);
+    sprintf(fps, "Caffe Macchiato / Stable Fluids (%d x %d): broadcast @ %3.1f MB/sec", width, height, connection);
     glutSetWindowTitle(fps);
 
     glutPostRedisplay();
@@ -216,7 +216,7 @@ void* broadcast_listener(void* args)
 {
 	// Listen to the broadcast and update the corresponding data
 	// with the received packets.
-	client->listen(particles);
+	client->listen(particles, &connection);
 
 	return NULL;
 }
@@ -240,7 +240,7 @@ int main(int argc, char* argv[])
 	height = config.height;
 	DS = width * height;
 	cData = config.szpoint;
-	printf("Dispaly config: %d x %d x %d\n", width, height, cData);
+	printf("Display config: %d x %d x %d\n", width, height, cData);
 
 	wWidth  = MAX(512, width);
 	wHeight = MAX(512, height);

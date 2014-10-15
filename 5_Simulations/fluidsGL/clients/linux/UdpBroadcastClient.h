@@ -3,6 +3,7 @@
 
 #include "UdpBroadcastServer.h"
 
+#include <cstdio>
 #include <netinet/in.h>
 
 class UdpBroadcastClient
@@ -22,8 +23,9 @@ public :
 	// Get display configuration from the broadcast.
 	void configure(DisplayConfig& config);
 
-	// Listen to the broadcast the specified amount of milliseconds.
-	void listen(char* signal);
+	// Listen to the broadcast and update the specified array
+	// with the signal contents. Optionally report signal rate.
+	void listen(char* signal, double* rate = NULL);
 };
 
 #endif // UDP_BROADCAST_CLIENT_H
