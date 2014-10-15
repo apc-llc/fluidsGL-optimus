@@ -129,7 +129,7 @@ ifeq ($(dbg),1)
       NVCCFLAGS += -g -O0
       TARGET := debug
 else
-      NVCCFLAGS += -g -O3
+      NVCCFLAGS += -g -O3 -Xcompiler -mtune=native
       TARGET := release
 endif
 
