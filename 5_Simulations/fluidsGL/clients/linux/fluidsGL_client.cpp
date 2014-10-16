@@ -80,6 +80,7 @@ std::auto_ptr<UdpBroadcastClient> client;
 #include <malloc.h>
 #include <string.h>
 #include <pthread.h>
+#include <unistd.h>
 
 double connection = 0;
 
@@ -113,6 +114,9 @@ void display(void)
     glutSetWindowTitle(fps);
 
     glutPostRedisplay();
+
+	// Do not draw faster than 30 FPS - does not make sense anyways.
+	usleep(1e6 / 30);
 }
 
 void keyboard(unsigned char key, int x, int y)
