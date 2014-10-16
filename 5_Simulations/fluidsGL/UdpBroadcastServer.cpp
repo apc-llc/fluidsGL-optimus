@@ -1,5 +1,6 @@
 #include "UdpBroadcastServer.h"
 
+#include <algorithm>
 #include <stdio.h>
 #include <unistd.h>
 #include <stdlib.h>
@@ -105,6 +106,8 @@ UdpBroadcastServer::UdpBroadcastServer()
 
 using namespace std;
 
+vector<int> packets_indexes;
+
 void UdpBroadcastServer::broadcast(char* packets, int width, int height, int szpoint)
 {
 	// Send the zero packet, which shall contain the screen dimensions.
@@ -131,8 +134,19 @@ void UdpBroadcastServer::broadcast(char* packets, int width, int height, int szp
 	if (sizeof(float) * width * height % UdpBroadcastServer::PacketSize)
 		npackets++;
 
-	for (int i = 0; i < npackets; i++)
+	if (packets_indexes.size() != npackets)
 	{
+		packets_indexes.resize(npackets);
+		for (int i = 0; i < npackets; i++)
+			packets_indexes[i] = i;
+	}
+
+	random_shuffle(packets_indexes.begin(), packets_indexes.end());
+
+	for (int ii = 0; ii < npackets; ii++)
+	{
+		int i = packets_indexes[ii];
+
 		char* packet = packets + i * (UdpBroadcastServer::PacketSize + sizeof(unsigned int));
 		
 		int z = sendto(s, packet,
