@@ -1,3 +1,27 @@
+## Compiling
+
+## How to compile Linux server and Linux client
+
+Linux server and client are built by default with the project `Makefile`:
+
+```
+$ cd 5_Simulations/fluidsGL/
+$ make
+```
+
+### How to compile Android client
+
+Android client compilation requires Android SDK and NDK. Using the provided `Makefile`, client could be configured, compiled, installed and executed on connected Android device:
+
+```
+$ make configure
+$ make
+```
+
+Note the Android device must have development mode enabled, and have the host PC authorized for using it.
+
+## Running
+
 ### How to run Linux server and Linux client 
 
 By default, the server and client are configured to run on the same host, using loopback interface, for testing purposes. In this configuration, client and server could be started without arguments:
