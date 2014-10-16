@@ -3,9 +3,10 @@
 #include <android/log.h>
 #include <cstdio>
 #include <cstdlib>
-#include <GLES/gl.h>
-#include <GLES3/gl3.h>
 #include <EGL/egl.h>
+#include <GLES3/gl3.h>
+#include <string>
+#include <vector>
 
 #define DEBUG 1
 
@@ -103,16 +104,19 @@ exit:
 	return program;
 }
 
-static const char VERTEX_SHADER[] =
+using namespace std;
+
+string vertex_shader_format =
 	"#version 300 es\n"
     "layout(location = 0) in vec2 pos;\n"
 	"out vec4 vColor;\n"
 	"void main() {\n"
     "    gl_Position = vec4(pos.x * 2.0f - 1.0f, pos.y * 2.0f - 1.0f, 1.0f, 1.0f);\n"
+    "    gl_PointSize = %ff;\n"
     "    vColor = vec4(1.f, 1.f, 1.f, 0.5f);\n"
 	"}\n";
 
-static const char FRAGMENT_SHADER[] =
+string fragment_shader_format =
 	"#version 300 es\n"
 	"precision mediump float;\n"
 	"out vec4 outColor;\n"
@@ -129,7 +133,17 @@ float particles[nparticles * 2];
 
 void on_surface_created()
 {
-	mProgram = createProgram(VERTEX_SHADER, FRAGMENT_SHADER);
+	vector<char> vvertex_shader;
+	vvertex_shader.resize(snprintf(NULL, 0, vertex_shader_format.c_str(), 4.0f) + 1);
+	char* vertex_shader = &vvertex_shader[0];
+	sprintf(vertex_shader, vertex_shader_format.c_str(), 4.0f);
+
+	vector<char> vfragment_shader;
+	vfragment_shader.resize(snprintf(NULL, 0, "%s", fragment_shader_format.c_str()) + 1);
+	char* fragment_shader = &vfragment_shader[0];
+	sprintf(fragment_shader, "%s", fragment_shader_format.c_str());
+
+	mProgram = createProgram(vertex_shader, fragment_shader);
 	if (!mProgram)
 		exit(1);
 

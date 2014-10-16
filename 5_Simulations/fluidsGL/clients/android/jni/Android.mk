@@ -19,7 +19,7 @@ LOCAL_MODULE := libcaffemacchiato
 LOCAL_CFLAGS := -Werror
 
 # Static libraries to link with
-LOCAL_LDLIBS := -lGLESv3 -lEGL -lGLESv1_CM
+LOCAL_LDLIBS := -lGLESv3 -lEGL
 
 LOCAL_LDLIBS += -L$(SYSROOT)/usr/lib -llog
 
