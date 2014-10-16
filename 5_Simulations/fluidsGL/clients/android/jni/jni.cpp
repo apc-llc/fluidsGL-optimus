@@ -24,8 +24,8 @@ JNIEXPORT void JNICALL Java_com_example_caffemacchiato_GameLibJNIWrapper_on_1sur
  * Signature: (II)V
  */
 JNIEXPORT void JNICALL Java_com_example_caffemacchiato_GameLibJNIWrapper_on_1surface_1changed
-  (JNIEnv * par, jclass par1, jint par2, jint par3){
-	on_surface_changed();
+  (JNIEnv * par, jclass par1, jint width, jint height){
+	on_surface_changed(width, height);
 }
 
 /*

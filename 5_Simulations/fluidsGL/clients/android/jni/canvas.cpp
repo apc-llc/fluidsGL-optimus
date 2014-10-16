@@ -6,6 +6,7 @@
 #include <EGL/egl.h>
 #include <GLES3/gl3.h>
 #include <string>
+#include <unistd.h>
 #include <vector>
 
 #define DEBUG 1
@@ -133,27 +134,8 @@ float particles[nparticles * 2];
 
 void on_surface_created()
 {
-	vector<char> vvertex_shader;
-	vvertex_shader.resize(snprintf(NULL, 0, vertex_shader_format.c_str(), 4.0f) + 1);
-	char* vertex_shader = &vvertex_shader[0];
-	sprintf(vertex_shader, vertex_shader_format.c_str(), 4.0f);
-
-	vector<char> vfragment_shader;
-	vfragment_shader.resize(snprintf(NULL, 0, "%s", fragment_shader_format.c_str()) + 1);
-	char* fragment_shader = &vfragment_shader[0];
-	sprintf(fragment_shader, "%s", fragment_shader_format.c_str());
-
-	mProgram = createProgram(vertex_shader, fragment_shader);
-	if (!mProgram)
-		exit(1);
-
-	float finvrandmax = 1.0f / RAND_MAX;
-	for (int i = 0; i < nparticles * 2; i++)
-		particles[i] = rand() * finvrandmax;
-
 	glGenBuffers(1, &vbo);
 	glBindBuffer(GL_ARRAY_BUFFER, vbo);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(float) * 2 * nparticles, particles, GL_DYNAMIC_DRAW);
 
     glGenVertexArrays(1, &mVBState);
     glBindVertexArray(mVBState);
@@ -163,12 +145,38 @@ void on_surface_created()
     glEnableVertexAttribArray(0);
 }
 
-void on_surface_changed() {
-	// No-op
-}
+#define MIN(a, b) ((a) < (b) ? (a) : (b))
 
-void on_draw_frame()
+void on_surface_changed(int wWidth, int wHeight)
 {
+    ALOGV("on_surface_changed");
+
+	// Calculate the point size based on problem size
+	// relative to screen size.
+	int width = 512;
+	int height = 512;
+	float radius = MIN((float)wWidth / width, (float)wHeight / height);
+	
+	vector<char> vvertex_shader;
+	vvertex_shader.resize(snprintf(NULL, 0, vertex_shader_format.c_str(), radius) + 1);
+	char* vertex_shader = &vvertex_shader[0];
+	sprintf(vertex_shader, vertex_shader_format.c_str(), radius);
+
+	vector<char> vfragment_shader;
+	vfragment_shader.resize(snprintf(NULL, 0, "%s", fragment_shader_format.c_str()) + 1);
+	char* fragment_shader = &vfragment_shader[0];
+	sprintf(fragment_shader, "%s", fragment_shader_format.c_str());
+
+	if (!mProgram)
+	{
+		mProgram = createProgram(vertex_shader, fragment_shader);
+		if (!mProgram)
+			exit(1);
+	}
+
+	glBindBuffer(GL_ARRAY_BUFFER, vbo);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(float) * 2 * nparticles, particles, GL_DYNAMIC_DRAW);
+
 	glClear(GL_COLOR_BUFFER_BIT);
 	glClearColor(1.f/256*172, 1.f/256*101, 1.f/256*4, 0.f);
 	glEnable(GL_BLEND);
@@ -179,5 +187,31 @@ void on_draw_frame()
 	glBindVertexArray(mVBState);
 	glDrawArrays(GL_POINTS, 0, nparticles);
 	glDisable(GL_TEXTURE_2D);
+}
+
+void on_draw_frame()
+{
+    ALOGV("on_draw_frame()");
+
+	float finvrandmax = 1.0f / RAND_MAX;
+	for (int i = 0; i < nparticles * 2; i++)
+		particles[i] = rand() * finvrandmax;
+
+	glBindBuffer(GL_ARRAY_BUFFER, vbo);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(float) * 2 * nparticles, particles, GL_DYNAMIC_DRAW);
+
+	glClear(GL_COLOR_BUFFER_BIT);
+	glClearColor(1.f/256*172, 1.f/256*101, 1.f/256*4, 0.f);
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	glDisable(GL_DEPTH_TEST);
+	glDisable(GL_CULL_FACE);
+	glUseProgram(mProgram);
+	glBindVertexArray(mVBState);
+	glDrawArrays(GL_POINTS, 0, nparticles);
+	glDisable(GL_TEXTURE_2D);
+
+	// Do not draw faster than 30 FPS - does not make sense anyways.
+	usleep(1e6 / 30);
 }
 

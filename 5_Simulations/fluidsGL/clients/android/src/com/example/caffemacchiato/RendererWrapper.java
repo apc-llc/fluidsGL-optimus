@@ -13,14 +13,11 @@ public class RendererWrapper implements Renderer  {
  
     @Override
     public void onSurfaceChanged(GL10 gl, int width, int height) {
-        // No-op
+        GameLibJNIWrapper.on_surface_changed(width, height);
     }
  
     @Override
     public void onDrawFrame(GL10 gl) {
     	GameLibJNIWrapper.on_draw_frame();
     }
-
-	
-
 }
