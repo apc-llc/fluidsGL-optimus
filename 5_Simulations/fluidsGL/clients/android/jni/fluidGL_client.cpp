@@ -152,7 +152,7 @@ float particles[nparticles * 2];
 
 void on_surface_created()
 {
-    ALOGV("on_surface_changed");
+    ALOGV("on_surface_created");
 }
 
 #define MIN(a, b) ((a) < (b) ? (a) : (b))
