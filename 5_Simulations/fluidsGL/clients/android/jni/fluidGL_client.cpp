@@ -5,6 +5,8 @@
 #include <cstdlib>
 #include <EGL/egl.h>
 #include <GLES3/gl3.h>
+#include <memory>
+#include <pthread.h>
 #include <string>
 #include <unistd.h>
 #include <vector>
@@ -112,7 +114,7 @@ string vertex_shader_format =
     "layout(location = 0) in vec2 pos;\n"
 	"out vec4 vColor;\n"
 	"void main() {\n"
-    "    gl_Position = vec4(pos.x * 2.0f - 1.0f, pos.y * 2.0f - 1.0f, 1.0f, 1.0f);\n"
+    "    gl_Position = vec4(pos.x * 2.0f - 1.0f, -(pos.y * 2.0f - 1.0f), 1.0f, 1.0f);\n"
     "    gl_PointSize = %ff;\n"
     "    vColor = vec4(1.f, 1.f, 1.f, 0.5f);\n"
 	"}\n";
@@ -136,19 +138,17 @@ static int wHeight = 0;
 static int clicked = 0, fullscreen = 0;
 
 GLuint vbo = 0;                 // OpenGL vertex buffer object
-//static char *particles = NULL;  // particle positions in host memory
+static char *particles = NULL;  // particle positions in host memory
 static int lastx = 0, lasty = 0;
 
 GLuint mProgram;
 GLuint mVBState;
 
+float radius = 1.0f;            // Particle radius
+
 #include "UdpBroadcastClient.h"
 
-#include <memory>
 std::auto_ptr<UdpBroadcastClient> client;
-
-const int nparticles = 8192;
-float particles[nparticles * 2];
 
 void on_surface_created()
 {
@@ -157,9 +157,12 @@ void on_surface_created()
 
 #define MIN(a, b) ((a) < (b) ? (a) : (b))
 
-void on_surface_changed(int wWidth, int wHeight)
+void on_surface_changed(int wWidth_, int wHeight_)
 {
     ALOGV("on_surface_changed");
+
+    wWidth = wWidth_;
+    wHeight = wHeight_;
 
 	glGenBuffers(1, &vbo);
 	glBindBuffer(GL_ARRAY_BUFFER, vbo);
@@ -170,41 +173,37 @@ void on_surface_changed(int wWidth, int wHeight)
 	glBindBuffer(GL_ARRAY_BUFFER, vbo);
 	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, NULL);
     glEnableVertexAttribArray(0);
-
-	// Calculate the point size based on problem size
-	// relative to screen size.
-	int width = 512;
-	int height = 512;
-	float radius = MIN((float)wWidth / width, (float)wHeight / height);
-	
-	vector<char> vvertex_shader;
-	vvertex_shader.resize(snprintf(NULL, 0, vertex_shader_format.c_str(), radius) + 1);
-	char* vertex_shader = &vvertex_shader[0];
-	sprintf(vertex_shader, vertex_shader_format.c_str(), radius);
-
-	vector<char> vfragment_shader;
-	vfragment_shader.resize(snprintf(NULL, 0, "%s", fragment_shader_format.c_str()) + 1);
-	char* fragment_shader = &vfragment_shader[0];
-	sprintf(fragment_shader, "%s", fragment_shader_format.c_str());
-
-	if (!mProgram)
-	{
-		mProgram = createProgram(vertex_shader, fragment_shader);
-		if (!mProgram)
-			exit(1);
-	}
 }
 
 void on_draw_frame()
 {
     ALOGV("on_draw_frame()");
 
-	float finvrandmax = 1.0f / RAND_MAX;
-	for (int i = 0; i < nparticles * 2; i++)
-		particles[i] = rand() * finvrandmax;
+	if (!mProgram)
+	{
+		// Substitute radius into vertex shader code.
+		vector<char> vvertex_shader;
+		vvertex_shader.resize(snprintf(NULL, 0, vertex_shader_format.c_str(), radius) + 1);
+		char* vertex_shader = &vvertex_shader[0];
+		sprintf(vertex_shader, vertex_shader_format.c_str(), radius);
 
-	glBindBuffer(GL_ARRAY_BUFFER, vbo);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(float) * 2 * nparticles, particles, GL_DYNAMIC_DRAW);
+		// Substitute radius into fragment shader code.
+		vector<char> vfragment_shader;
+		vfragment_shader.resize(snprintf(NULL, 0, "%s", fragment_shader_format.c_str()) + 1);
+		char* fragment_shader = &vfragment_shader[0];
+		sprintf(fragment_shader, "%s", fragment_shader_format.c_str());
+
+		// Compile vertex and fragment shaders.
+		mProgram = createProgram(vertex_shader, fragment_shader);
+		if (!mProgram)
+			exit(1);
+	}
+
+	if (particles)
+	{
+		glBindBuffer(GL_ARRAY_BUFFER, vbo);
+		glBufferData(GL_ARRAY_BUFFER, cData * DS, particles, GL_DYNAMIC_DRAW);
+	}
 
 	glClear(GL_COLOR_BUFFER_BIT);
 	glClearColor(1.f/256*172, 1.f/256*101, 1.f/256*4, 0.f);
@@ -212,13 +211,29 @@ void on_draw_frame()
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	glDisable(GL_DEPTH_TEST);
 	glDisable(GL_CULL_FACE);
-	glUseProgram(mProgram);
-	glBindVertexArray(mVBState);
-	glDrawArrays(GL_POINTS, 0, nparticles);
+	if (mProgram)
+		glUseProgram(mProgram);
+	if (particles)
+	{
+		glBindVertexArray(mVBState);
+		glDrawArrays(GL_POINTS, 0, DS);
+	}
 	glDisable(GL_TEXTURE_2D);
 
 	// Do not draw faster than 30 FPS - does not make sense anyways.
 	usleep(1e6 / 30);
+}
+
+void* broadcast_listener(void* args)
+{
+	ALOGV("Started broadcast listener thread");
+
+	// Listen to the broadcast and update the corresponding data
+	// with the received packets.
+	// TODO send connection rate to be depicted in the activity title.
+	client->listen(particles, NULL);
+
+	return NULL;
 }
 
 void on_connect(const char* bc_addr)
@@ -236,6 +251,38 @@ void on_connect(const char* bc_addr)
 	height = config.height;
 	DS = width * height;
 	cData = config.szpoint;
-	printf("Display config: %d x %d x %d\n", width, height, cData);
+	ALOGV("Display config: %d x %d x %d\n", width, height, cData);
+
+	ALOGV("Allocating particles array");
+
+    // Create particle array in host memory
+    // Extra packet size - to pad broadcast messages.
+    if (particles)
+    {
+        // First allocate new array, then delete old
+        // (should avoid races with frame drawer).
+        char* particlesOld = particles;
+	    particles = (char*)malloc(cData * DS + UdpBroadcastServer::PacketSize);
+	    free(particlesOld);
+    }
+    else
+    {
+        particles = (char*)malloc(cData * DS + UdpBroadcastServer::PacketSize);
+    }
+    memset(particles, 0, cData * DS);
+
+	ALOGV("Compiling shaders");
+
+	// Calculate the point size based on problem size
+	// relative to screen size and force shaders recompilation.
+	radius = 0.9f * MIN((float)wWidth / width, (float)wHeight / height);
+	mProgram = 0;
+
+	ALOGV("Starting broadcast listener thread");
+
+    // Listen to the particles state broadcast in the separate thread.
+    // TODO Cancel this thread, if already exits.
+    pthread_t tid;
+    pthread_create(&tid, NULL, &broadcast_listener, NULL);
 }
 
