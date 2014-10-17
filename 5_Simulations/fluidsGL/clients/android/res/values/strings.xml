@@ -2,7 +2,7 @@
 <resources>
 
     <string name="app_name">Caffe Macchiato</string>
-    <string name="dummy_button">Dummy Button</string>
-    <string name="dummy_content">DUMMY\nCONTENT</string>
+    <string name="connect_button">Connect to Server ...</string>
+    <string name="reset_button">Reset</string>
 
 </resources>

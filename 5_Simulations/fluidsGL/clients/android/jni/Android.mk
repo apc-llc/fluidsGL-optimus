@@ -7,10 +7,7 @@ LOCAL_PATH := $(call my-dir)
 include $(CLEAR_VARS)
 
 # All the source files to include in this module
-LOCAL_SRC_FILES := jni.cpp \
-                   canvas.cpp 
-
-#LOCAL_SHARED_LIBRARIES += libffmpeg-prebuild 
+LOCAL_SRC_FILES := jni.cpp fluidGL_client.cpp UdpBroadcastClient.cpp mkaddr.c
 
 # The name of the module
 LOCAL_MODULE := libcaffemacchiato

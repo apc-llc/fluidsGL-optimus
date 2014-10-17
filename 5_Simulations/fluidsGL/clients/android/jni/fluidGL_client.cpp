@@ -1,4 +1,4 @@
-#include "canvas.h"
+#include "fluidGL_client.h"
 
 #include <android/log.h>
 #include <cstdio>
@@ -125,15 +125,42 @@ string fragment_shader_format =
 	"	outColor = vec4(1.f, 1.f, 1.f, 0.5f);\n"
 	"}\n";
 
-GLuint vbo;
+static int width, height;
+static int DS, cData;
+
+#define MAX(a,b) ((a) > (b) ? (a) : (b))
+
+static int wWidth = 0;
+static int wHeight = 0;
+
+static int clicked = 0, fullscreen = 0;
+
+GLuint vbo = 0;                 // OpenGL vertex buffer object
+//static char *particles = NULL;  // particle positions in host memory
+static int lastx = 0, lasty = 0;
+
 GLuint mProgram;
 GLuint mVBState;
+
+#include "UdpBroadcastClient.h"
+
+#include <memory>
+std::auto_ptr<UdpBroadcastClient> client;
 
 const int nparticles = 8192;
 float particles[nparticles * 2];
 
 void on_surface_created()
 {
+    ALOGV("on_surface_changed");
+}
+
+#define MIN(a, b) ((a) < (b) ? (a) : (b))
+
+void on_surface_changed(int wWidth, int wHeight)
+{
+    ALOGV("on_surface_changed");
+
 	glGenBuffers(1, &vbo);
 	glBindBuffer(GL_ARRAY_BUFFER, vbo);
 
@@ -143,13 +170,6 @@ void on_surface_created()
 	glBindBuffer(GL_ARRAY_BUFFER, vbo);
 	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, NULL);
     glEnableVertexAttribArray(0);
-}
-
-#define MIN(a, b) ((a) < (b) ? (a) : (b))
-
-void on_surface_changed(int wWidth, int wHeight)
-{
-    ALOGV("on_surface_changed");
 
 	// Calculate the point size based on problem size
 	// relative to screen size.
@@ -173,20 +193,6 @@ void on_surface_changed(int wWidth, int wHeight)
 		if (!mProgram)
 			exit(1);
 	}
-
-	glBindBuffer(GL_ARRAY_BUFFER, vbo);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(float) * 2 * nparticles, particles, GL_DYNAMIC_DRAW);
-
-	glClear(GL_COLOR_BUFFER_BIT);
-	glClearColor(1.f/256*172, 1.f/256*101, 1.f/256*4, 0.f);
-	glEnable(GL_BLEND);
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-	glDisable(GL_DEPTH_TEST);
-	glDisable(GL_CULL_FACE);
-	glUseProgram(mProgram);
-	glBindVertexArray(mVBState);
-	glDrawArrays(GL_POINTS, 0, nparticles);
-	glDisable(GL_TEXTURE_2D);
 }
 
 void on_draw_frame()
@@ -213,5 +219,23 @@ void on_draw_frame()
 
 	// Do not draw faster than 30 FPS - does not make sense anyways.
 	usleep(1e6 / 30);
+}
+
+void on_connect(const char* bc_addr)
+{
+    ALOGV("on_connect(%s)", bc_addr);
+
+	client.reset(new UdpBroadcastClient(bc_addr));
+
+	printf("Waiting for the server...\n");
+
+	DisplayConfig config;
+	client->configure(config);
+
+	width = config.width;
+	height = config.height;
+	DS = width * height;
+	cData = config.szpoint;
+	printf("Display config: %d x %d x %d\n", width, height, cData);
 }
 

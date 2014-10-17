@@ -5,16 +5,24 @@ import com.example.caffemacchiato.util.SystemUiHider;
 import android.annotation.TargetApi;
 import android.app.Activity;
 import android.app.ActivityManager;
+import android.app.AlertDialog;
+import android.app.ProgressDialog;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.pm.ConfigurationInfo;
 import android.opengl.GLSurfaceView;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
+import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
-import android.widget.Toast;
-
+import android.widget.Button;
+import java.lang.Character;
+import java.net.NetworkInterface;
+import java.util.Enumeration;
+import java.net.InterfaceAddress;
+import java.util.ArrayList;
 
 /**
  * An example full-screen activity that shows and hides the system UI (i.e.
@@ -51,18 +59,6 @@ public class FullscreenActivity extends Activity {
      */
     private SystemUiHider mSystemUiHider;
 
-    private GLSurfaceView glSurfaceView;
-    private boolean rendererSet = false;
-
-    private boolean isProbablyEmulator() {
-        return Build.VERSION.SDK_INT >= Build.VERSION_CODES.ICE_CREAM_SANDWICH_MR1
-                && (Build.FINGERPRINT.startsWith("generic")
-                        || Build.FINGERPRINT.startsWith("unknown")
-                        || Build.MODEL.contains("google_sdk")
-                        || Build.MODEL.contains("Emulator")
-                        || Build.MODEL.contains("Android SDK built for x86"));
-    }
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -85,27 +81,10 @@ public class FullscreenActivity extends Activity {
                     @Override
                     @TargetApi(Build.VERSION_CODES.HONEYCOMB_MR2)
                     public void onVisibilityChange(boolean visible) {
-                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB_MR2) {
-                            // If the ViewPropertyAnimator API is available
-                            // (Honeycomb MR2 and later), use it to animate the
-                            // in-layout UI controls at the bottom of the
-                            // screen.
-                            if (mControlsHeight == 0) {
-                                mControlsHeight = controlsView.getHeight();
-                            }
-                            if (mShortAnimTime == 0) {
-                                mShortAnimTime = getResources().getInteger(
-                                        android.R.integer.config_shortAnimTime);
-                            }
-                            controlsView.animate()
-                                    .translationY(visible ? 0 : mControlsHeight)
-                                    .setDuration(mShortAnimTime);
-                        } else {
-                            // If the ViewPropertyAnimator APIs aren't
-                            // available, simply show or hide the in-layout UI
-                            // controls.
-                            controlsView.setVisibility(visible ? View.VISIBLE : View.GONE);
-                        }
+                        // If the ViewPropertyAnimator APIs aren't
+                        // available, simply show or hide the in-layout UI
+                        // controls.
+                        controlsView.setVisibility(visible ? View.VISIBLE : View.GONE);
 
                         if (visible && AUTO_HIDE) {
                             // Schedule a hide().
@@ -129,66 +108,95 @@ public class FullscreenActivity extends Activity {
         // Upon interacting with UI controls, delay any scheduled hide()
         // operations to prevent the jarring behavior of controls going away
         // while interacting with the UI.
-        findViewById(R.id.dummy_button).setOnTouchListener(mDelayHideTouchListener);
+        findViewById(R.id.connect_button).setOnTouchListener(mDelayHideTouchListener);
+        findViewById(R.id.reset_button).setOnTouchListener(mDelayHideTouchListener);
+
+        final Button connect = (Button) findViewById(R.id.connect_button);
+        connect.setOnClickListener(new View.OnClickListener() {
+            public void onClick(View v) {
+		    	// Find addresses in all available network interfaces.
+				Enumeration<NetworkInterface> nwis;
+				ArrayList<String> addressesList = new ArrayList<String>();
+				try {
+					nwis = NetworkInterface.getNetworkInterfaces();
+					while (nwis.hasMoreElements()) {
+					    NetworkInterface ni = nwis.nextElement();
+					    for (InterfaceAddress ia : ni.getInterfaceAddresses()) {
+					    	String address = ia.getAddress().toString().substring(1);
+					    	boolean ipv4 = true;
+					    	for (int i = 0; i < address.length(); i++)
+					    		if ((address.charAt(i) != '.') && !Character.isDigit(address.charAt(i)))
+					    		{
+					    			ipv4 = false;
+					    			break;
+					    		}
+					    	if (!ipv4) continue;
+					    	addressesList.add(address);
+					    }
+					}
+				} catch (Exception e) {
+				    e.printStackTrace();
+				}
+		    	final String[] addresses = addressesList.toArray(new String[addressesList.size()]);
+
+				// Choose network interface
+				address = addresses[0];
+				new AlertDialog.Builder(FullscreenActivity.this)
+		            .setTitle("Select the network address to use")
+		            .setSingleChoiceItems(addresses, 0, new DialogInterface.OnClickListener() {
+		                public void onClick(DialogInterface dialog, int whichButton) {
+							address = addresses[whichButton];
+		                }
+		            })
+		            .setPositiveButton("OK", new DialogInterface.OnClickListener() {
+		                public void onClick(DialogInterface dialog, int whichButton) {
+							dialog.dismiss();
+
+							// Wait for incoming server broadcast at the specified address.
+							final String bc_addr = address + ":9097";
+							final ProgressDialog ringProgressDialog = ProgressDialog.show(FullscreenActivity.this,
+								"Waiting for the server ...", "Waiting for incoming connection at " + bc_addr, true);
+							ringProgressDialog.setCancelable(true);
+							new Thread(new Runnable() {
+								@Override
+								public void run() {
+									GameLibJNIWrapper.on_connect(bc_addr);
+									ringProgressDialog.dismiss();
+								}
+							}).start();
+		                }
+		            })
+		            .setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+		                public void onClick(DialogInterface dialog, int whichButton) {
+		                	dialog.dismiss();
+		                	address = "";
+		                }
+		            })
+		        .create().show();
+            }
+        });
 
         ActivityManager activityManager =
                 (ActivityManager) getSystemService(Context.ACTIVITY_SERVICE);
         ConfigurationInfo configurationInfo =
                 activityManager.getDeviceConfigurationInfo();
-     
-        final boolean supportsES2 =
-                configurationInfo.reqGlEsVersion >= 0x20000 || isProbablyEmulator();
- 
-        if (supportsES2) {
-            glSurfaceView = new GLSurfaceView(this);
-     
-            if (isProbablyEmulator()) {
-                // Avoids crashes on startup with some emulator images.
-                glSurfaceView.setEGLConfigChooser(8, 8, 8, 8, 16, 0);
-            }
-     
-            glSurfaceView.setEGLContextClientVersion(2);
-            glSurfaceView.setRenderer(new RendererWrapper());
-            rendererSet = true;
-            setContentView(glSurfaceView);
-        } else {
-            // Should never be seen in production, since the manifest filters
-            // unsupported devices.
-            Toast.makeText(this, "This device does not support OpenGL ES 2.0.",
-                    Toast.LENGTH_LONG).show();
-            return;
-        }    
     }
 
     @Override
     protected void onPause() {
+        Log.v("AA", "FullscreenActivity.onPause");
+        GLSurfaceView particlesSurfaceView = (GLSurfaceView)findViewById(R.id.fullscreen_content);
+        particlesSurfaceView.onPause();
         super.onPause();
-     
-        if (rendererSet) {
-            glSurfaceView.onPause();
-        }
     }
      
     @Override
     protected void onResume() {
+        Log.v("AA", "FullscreenActivity.onResume");
+        GLSurfaceView particlesSurfaceView = (GLSurfaceView)findViewById(R.id.fullscreen_content);
+        particlesSurfaceView.onResume();
         super.onResume();
-     
-        if (rendererSet) {
-            glSurfaceView.onResume();
-        }
     }
-
-
-    @Override
-    protected void onPostCreate(Bundle savedInstanceState) {
-        super.onPostCreate(savedInstanceState);
-
-        // Trigger the initial hide() shortly after the activity has been
-        // created, to briefly hint to the user that UI controls
-        // are available.
-        delayedHide(100);
-    }
-
 
     /**
      * Touch listener to use for in-layout UI controls to delay hiding the
@@ -204,6 +212,8 @@ public class FullscreenActivity extends Activity {
             return false;
         }
     };
+
+	String address = "";
 
     Handler mHideHandler = new Handler();
     Runnable mHideRunnable = new Runnable() {
