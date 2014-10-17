@@ -14,11 +14,11 @@ public class RendererWrapper implements Renderer  {
     @Override
     public void onSurfaceChanged(GL10 gl, int width, int height) {
         gl.glViewport(0, 0, width, height);
-        gl.glMatrixMode(gl.GL_PROJECTION);
+        /*gl.glMatrixMode(gl.GL_PROJECTION);
         gl.glLoadIdentity();
         gl.glOrthox(0, 1, 1, 0, 0, 1);
         gl.glMatrixMode(gl.GL_MODELVIEW);
-        gl.glLoadIdentity();
+        gl.glLoadIdentity();*/
         GameLibJNIWrapper.on_surface_changed(width, height);
     }
  
