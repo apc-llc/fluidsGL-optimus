@@ -42,7 +42,7 @@ extern cufftHandle planc2r;
 extern cData *vxfield;
 extern cData *vyfield;
 
-#ifdef OPTIMUS
+#if defined(OPTIMUS) || defined(BROADCAST)
 extern cData *particles; // particle positions in host memory
 #endif
 
