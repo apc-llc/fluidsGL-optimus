@@ -22,6 +22,38 @@
 #ifndef HALF_HALF_HPP
 #define HALF_HALF_HPP
 
+#ifdef fpclassify
+#undef fpclassify
+#endif
+
+#ifdef isnormal
+#undef isnormal
+#endif
+
+#ifdef isgreater
+#undef isgreater
+#endif
+
+#ifdef isgreaterequal
+#undef isgreaterequal
+#endif
+
+#ifdef isless
+#undef isless
+#endif
+
+#ifdef islessequal
+#undef islessequal
+#endif
+
+#ifdef islessgreater
+#undef islessgreater
+#endif
+
+#ifdef isunordered
+#undef isunordered
+#endif
+
 /// Combined gcc version number.
 #define HALF_GNUC_VERSION (__GNUC__*100+__GNUC_MINOR__)
 
