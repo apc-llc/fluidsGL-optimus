@@ -11,7 +11,8 @@ class UdpBroadcastClient
 	int s;                   /* Socket */
 	int len_inet;            /* length */
 	struct sockaddr_in adr;  /* AF_INET */
-
+	struct sockaddr_in adr_srvr;
+	
 	void initialize(const char *bc_addr);
 
 public :
@@ -26,6 +27,9 @@ public :
 	// Listen to the broadcast and update the specified array
 	// with the signal contents. Optionally report signal rate.
 	void listen(char* signal, double* rate = NULL);
+	
+	// Send feedback commands to server.
+	void feedback(FeedbackConfig& config);
 };
 
 #endif // UDP_BROADCAST_CLIENT_H

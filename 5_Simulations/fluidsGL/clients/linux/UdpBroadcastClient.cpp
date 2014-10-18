@@ -33,8 +33,6 @@ static void displayError(const char *on_what)
 
 void UdpBroadcastClient::initialize(const char *bc_addr)
 {
-	static int so_reuseaddr = TRUE;
-
 	// Create a UDP socket to use
 	s = socket(AF_INET, SOCK_DGRAM, 0);
 	if (s == -1)
@@ -42,14 +40,18 @@ void UdpBroadcastClient::initialize(const char *bc_addr)
 
 	// Form the broadcast address
 	len_inet = sizeof(adr);
-
 	int z = mkaddr(&adr, &len_inet, bc_addr, "udp");
 
 	if (z == -1)
 		displayError("Bad broadcast address");
 
 	// Allow multiple listeners on the broadcast address
+	static int so_reuseaddr = TRUE;
 	z = setsockopt(s, SOL_SOCKET, SO_REUSEADDR, &so_reuseaddr, sizeof(so_reuseaddr));
+
+	// Allow broadcasts
+	static int so_broadcast = TRUE;
+	z = setsockopt(s, SOL_SOCKET, SO_BROADCAST, &so_broadcast, sizeof(so_broadcast));
 
 	if (z == -1)
 		displayError("setsockopt(SO_REUSEADDR)");
@@ -100,6 +102,7 @@ void UdpBroadcastClient::configure(DisplayConfig& config)
 
 		packet += sizeof(unsigned int);
 		config = *(DisplayConfig*)(packet);
+		adr_srvr = config.adr_srvr;
 		return;
 	}
 	
@@ -157,5 +160,15 @@ void UdpBroadcastClient::listen(char* signal, double* rate)
 			*rate = vpacket.size() * (measure_period - 2) / 1024.0 / 1024.0 / time;
 		}
 	}
+}
+
+// Send feedback commands to server.
+void UdpBroadcastClient::feedback(FeedbackConfig& config)
+{
+	int z = sendto(s, &config, sizeof(FeedbackConfig),
+		0, (struct sockaddr*)&adr_srvr, sizeof(adr));
+
+	if (z == -1)
+		displayError("sendto()");
 }
 

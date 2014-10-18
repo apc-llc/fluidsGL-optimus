@@ -146,6 +146,7 @@ CheckRender       *g_CheckRender = NULL;
 // Visualization broadcasting server
 #ifdef BROADCAST
 std::auto_ptr<UdpBroadcastServer> server;
+pthread_mutex_t display_mutex = PTHREAD_MUTEX_INITIALIZER;
 #endif
 
 void autoTest();
@@ -168,6 +169,7 @@ void simulateFluids(void)
 
 void display(void)
 {
+	pthread_mutex_lock(&display_mutex);
 
     if (!ref_file)
     {
@@ -221,6 +223,8 @@ void display(void)
     }
 
     glutPostRedisplay();
+
+	pthread_mutex_unlock(&display_mutex);
 }
 
 void autoTest(char **argv)
@@ -376,6 +380,7 @@ void keyboard(unsigned char key, int x, int y)
 			break;
 
         case 'r':
+			pthread_mutex_lock(&display_mutex);
             memset(hvfield, 0, sizeof(cData) * DS);
             cudaMemcpy(dvfield, hvfield, sizeof(cData) * DS,
                        cudaMemcpyHostToDevice);
@@ -400,6 +405,7 @@ void keyboard(unsigned char key, int x, int y)
             cudaGraphicsGLRegisterBuffer(&cuda_vbo_resource, vbo, cudaGraphicsMapFlagsNone);
             getLastCudaError("cudaGraphicsGLRegisterBuffer failed");
 #endif
+			pthread_mutex_unlock(&display_mutex);
             break;
 
         default:
@@ -437,6 +443,19 @@ void motion(int x, int y)
 
     glutPostRedisplay();
 }
+
+void motion(int x, int y, int nx, int ny, float fx, float fy, int spy, int spx)
+{
+    if (clicked && nx < DIM-FR && nx > FR-1 && ny < DIM-FR && ny > FR-1)
+    {
+        addForces(dvfield, DIM, DIM, spx, spy, FORCE * DT * fx, FORCE * DT * fy, FR);
+        lastx = x;
+        lasty = y;
+    }
+
+    glutPostRedisplay();
+}
+
 
 void reshape(int x, int y)
 {
@@ -513,6 +532,40 @@ int initGL(int *argc, char **argv)
 }
 
 #ifdef BROADCAST
+void* feedback_listener(void* args)
+{
+	for (;;)
+	{
+		FeedbackConfig config;
+	
+		// Listen to the feedback from clients.
+		server->feedback(config);
+		
+		if (config.reset)
+		{
+			memset(particles, 0, sizeof(cData) * DS);
+			keyboard('r', 0, 0);
+		}
+
+		if (config.click)
+		{
+			lastx = config.lastx;
+			lasty = config.lasty;
+			clicked = config.clicked;
+		}
+		
+		if (config.motion)
+		{
+			pthread_mutex_lock(&display_mutex);
+			lastx = config.lastx;
+			lasty = config.lasty;
+			motion(config.lastx, config.lasty, config.nx, config.ny,
+				config.fx, config.fy, config.spy, config.spx);
+			pthread_mutex_unlock(&display_mutex);
+		}
+	}
+}
+
 void* broadcaster(void* args)
 {
 	int step = *(int*)args;
@@ -678,7 +731,7 @@ int main(int argc, char **argv)
     else
     {
 #ifdef BROADCAST
-		const char *sv_addr = "127.0.0:*";
+		const char *sv_addr = "127.0.0:9097";
 		const char *bc_addr = "127.255.255.2:9097";
 
 		// Server address
@@ -691,9 +744,17 @@ int main(int argc, char **argv)
 
 		server.reset(new UdpBroadcastServer(sv_addr, bc_addr));
 
-		// Broadcast the particles state in the separate thread.
-		pthread_t tid;
-		pthread_create(&tid, NULL, &broadcaster, &step);
+		// Listen to clients' feedbacks in a separate thread.
+		{
+			pthread_t tid;
+			pthread_create(&tid, NULL, &feedback_listener, &step);
+		}
+
+		// Broadcast the particles state in a separate thread.
+		{
+			pthread_t tid;
+			pthread_create(&tid, NULL, &broadcaster, &step);
+		}
 #endif
 #if defined (__APPLE__) || defined(MACOSX)
         atexit(cleanup);

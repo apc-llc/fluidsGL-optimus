@@ -142,6 +142,11 @@ void keyboard(unsigned char key, int x, int y)
 			break;
 
         case 'r':
+        	{
+        		FeedbackConfig config;
+        		config.reset = true;
+        		client->feedback(config);
+        	}
             break;
 
         default:
@@ -154,7 +159,16 @@ void click(int button, int updown, int x, int y)
     lastx = x;
     lasty = y;
     clicked = !clicked;
+
+	FeedbackConfig config;
+	config.click = true;
+	config.clicked = clicked;
+	config.lastx = lastx;
+	config.lasty = lasty;
+	client->feedback(config);
 }
+
+FeedbackConfig config;
 
 void motion(int x, int y)
 {
@@ -172,7 +186,14 @@ void motion(int x, int y)
         fy = ddy / (float)wHeight;
         int spy = ny-FR;
         int spx = nx-FR;
-        //addForces(dvfield, DIM, DIM, spx, spy, FORCE * DT * fx, FORCE * DT * fy, FR);
+
+		config.motion = true;
+		config.fx = fx; config.fy = fy;
+		config.spy = spy; config.spx = spx;
+		config.nx = nx; config.ny = ny;
+		config.lastx = lastx; config.lasty = lasty;
+		client->feedback(config);
+
         lastx = x;
         lasty = y;
     }

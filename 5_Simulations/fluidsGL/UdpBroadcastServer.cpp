@@ -31,9 +31,6 @@ static void displayError(const char *on_what)
 
 void UdpBroadcastServer::initialize(const char *sv_addr, const char *bc_addr)
 {
-	struct sockaddr_in adr_srvr; /* AF_INET */
-	static int so_broadcast = TRUE;
- 
 	// Form the server address
 	int len_srvr = sizeof(adr_srvr);
 	int z = mkaddr(&adr_srvr,  /* Returned address */
@@ -53,17 +50,15 @@ void UdpBroadcastServer::initialize(const char *sv_addr, const char *bc_addr)
 
 	if (z == -1)
 		displayError("Bad broadcast address");
-	 
+
 	// Create a UDP socket to use
 	s = socket(AF_INET, SOCK_DGRAM, 0);
 	if (s == -1)
 		displayError("socket()");
 	 
 	// Allow broadcasts
-	z = setsockopt(s, SOL_SOCKET,
-		           SO_BROADCAST,
-		           &so_broadcast,
-		           sizeof(so_broadcast));
+	static int so_broadcast = TRUE;
+	z = setsockopt(s, SOL_SOCKET, SO_BROADCAST, &so_broadcast, sizeof(so_broadcast));
 	 
 	if (z == -1)
 		displayError("setsockopt(SO_BROADCAST)");
@@ -95,12 +90,24 @@ UdpBroadcastServer::UdpBroadcastServer()
 		exit(1);
 	}
 
-	initialize("127.0.0:*", "127.255.255.2 9097");
+	initialize("127.0.0:9097", "127.255.255.2 9097");
 }
 
 using namespace std;
 
 vector<int> packets_indexes;
+
+void UdpBroadcastServer::feedback(FeedbackConfig& config)
+{
+	// Wait for a broadcast message
+	socklen_t x = 0;
+	int z = recvfrom(s,                       /* Socket */
+		         &config,                     /* Receiving buffer */
+		         sizeof(config),              /* Max rcv buf size */
+		         0,                           /* Flags: no options */
+		         (struct sockaddr *)&adr_bc,  /* Addr */
+		         &x);                         /* Addr len, in & out */
+}
 
 void UdpBroadcastServer::broadcast(
 	char* packets, int width, int height, int szpoint, int wstep, int hstep)
@@ -116,6 +123,7 @@ void UdpBroadcastServer::broadcast(
 		config->width = width / wstep;
 		config->height = height / hstep;
 		config->szpoint = szpoint;
+		config->adr_srvr = adr_srvr;
 
 		int z = sendto(s, packet,
 			UdpBroadcastServer::PacketSize + sizeof(unsigned int),
