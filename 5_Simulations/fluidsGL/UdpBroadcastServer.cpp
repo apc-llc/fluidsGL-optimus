@@ -36,7 +36,6 @@ void UdpBroadcastServer::initialize(const char *sv_addr, const char *bc_addr)
  
 	// Form the server address
 	int len_srvr = sizeof(adr_srvr);
-#if 1
 	int z = mkaddr(&adr_srvr,  /* Returned address */
 		       &len_srvr,      /* Returned length */
 		       sv_addr,        /* Input string addr */
@@ -44,12 +43,7 @@ void UdpBroadcastServer::initialize(const char *sv_addr, const char *bc_addr)
 
 	if (z == -1)
 		displayError("Bad server address");
-#endif
-#if 0
-	adr_srvr.sin_family = AF_INET;
-    adr_srvr.sin_port = htons(9097);
-    adr_srvr.sin_addr.s_addr = htonl(INADDR_ANY);
-#endif
+
 	// Form the broadcast address
 	len_bc = sizeof(adr_bc); 
 	z = mkaddr(&adr_bc,  /* Returned address */
@@ -108,7 +102,8 @@ using namespace std;
 
 vector<int> packets_indexes;
 
-void UdpBroadcastServer::broadcast(char* packets, int width, int height, int szpoint)
+void UdpBroadcastServer::broadcast(
+	char* packets, int width, int height, int szpoint, int wstep, int hstep)
 {
 	// Send the zero packet, which shall contain the screen dimensions.
 	{
@@ -118,8 +113,8 @@ void UdpBroadcastServer::broadcast(char* packets, int width, int height, int szp
 		unsigned int* index = (unsigned int*)packet;
 		*index = 0;
 		DisplayConfig* config = (DisplayConfig*)(packet + sizeof(unsigned int));
-		config->width = width;
-		config->height = height;
+		config->width = width / wstep;
+		config->height = height / hstep;
 		config->szpoint = szpoint;
 
 		int z = sendto(s, packet,
@@ -130,8 +125,8 @@ void UdpBroadcastServer::broadcast(char* packets, int width, int height, int szp
 			displayError("sendto()");
 	}
 
-	int npackets = sizeof(float) * width * height / UdpBroadcastServer::PacketSize;
-	if (sizeof(float) * width * height % UdpBroadcastServer::PacketSize)
+	int npackets = sizeof(float) * (width / wstep) * (height / hstep) / UdpBroadcastServer::PacketSize;
+	if (sizeof(float) * (width / wstep) * (height / hstep) % UdpBroadcastServer::PacketSize)
 		npackets++;
 
 	if (packets_indexes.size() != npackets)

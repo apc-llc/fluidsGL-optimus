@@ -27,7 +27,7 @@ public :
 
 	UdpBroadcastServer();
 
-	void broadcast(char* msg, int width, int height, int szpoint);
+	void broadcast(char* msg, int width, int height, int szpoint, int wstep, int hstep);
 };
 
 #endif // UDP_BROADCAST_SERVER_H

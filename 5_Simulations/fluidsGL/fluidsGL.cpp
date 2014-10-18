@@ -515,8 +515,10 @@ int initGL(int *argc, char **argv)
 #ifdef BROADCAST
 void* broadcaster(void* args)
 {
-	int npackets = sizeof(float) * DIM * DIM / UdpBroadcastServer::PacketSize;
-	if (sizeof(float) * DIM * DIM % UdpBroadcastServer::PacketSize)
+	int step = *(int*)args;
+	int wstep = step, hstep = step;
+	int npackets = sizeof(float) * (DIM / wstep) * (DIM / hstep) / UdpBroadcastServer::PacketSize;
+	if (sizeof(float) * (DIM / wstep) * (DIM / hstep) % UdpBroadcastServer::PacketSize)
 		npackets++;
 
 	for (;;)
@@ -534,13 +536,13 @@ void* broadcaster(void* args)
 			for (int j = 0, e = UdpBroadcastServer::PacketSize / sizeof(float); j != e; j++)
 			{
 				half_float::half* halfs = (half_float::half*)&dst[j];
-				halfs[0] = half_float::half_cast<half_float::half,std::round_to_nearest>(src[j].x);
-				halfs[1] = half_float::half_cast<half_float::half,std::round_to_nearest>(src[j].y);
+				halfs[0] = half_float::half_cast<half_float::half,std::round_to_nearest>(src[j * wstep].x);
+				halfs[1] = half_float::half_cast<half_float::half,std::round_to_nearest>(src[j * wstep].y);
 			}
 		}
 
 		// Broadcast the current particles array to listeners.
-		server->broadcast(packets, DIM, DIM, sizeof(cData));
+		server->broadcast(packets, DIM, DIM, sizeof(cData), wstep, hstep);
 
 		// Do not send data faster than 30 FPS - does not make sense anyways,
 		// and also does not overheat the network router.
@@ -608,11 +610,18 @@ int main(int argc, char **argv)
     particles = (cData *)malloc(sizeof(cData) * DS);
     memset(particles, 0, sizeof(cData) * DS);
 
-#if defined(BROADCAST)
+#ifdef BROADCAST
+	int step = 1;
+
+	// Broadcasted visualization stepping.
+	if (argc > 3)
+		step = atoi(argv[3]);
+
 	// Create additional space to store particle packets
 	// for broadcasting.
-	int npackets = sizeof(float) * DIM * DIM / UdpBroadcastServer::PacketSize;
-	if (sizeof(float) * DIM * DIM % UdpBroadcastServer::PacketSize)
+	int wstep = step, hstep = step;
+	int npackets = sizeof(float) * (DIM / wstep) * (DIM / hstep) / UdpBroadcastServer::PacketSize;
+	if (sizeof(float) * (DIM / wstep) * (DIM / hstep) % UdpBroadcastServer::PacketSize)
 		npackets++;
 	packets = (char*)malloc(npackets *
 		(UdpBroadcastServer::PacketSize + sizeof(unsigned int)));
@@ -684,7 +693,7 @@ int main(int argc, char **argv)
 
 		// Broadcast the particles state in the separate thread.
 		pthread_t tid;
-		pthread_create(&tid, NULL, &broadcaster, NULL);
+		pthread_create(&tid, NULL, &broadcaster, &step);
 #endif
 #if defined (__APPLE__) || defined(MACOSX)
         atexit(cleanup);
