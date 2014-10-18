@@ -24,7 +24,7 @@ struct FeedbackConfig
 	int nx, ny;
 	int lastx, lasty;
 
-	FeedbackConfig() : reset(false), motion(false) { }
+	FeedbackConfig() : reset(false), click(false), motion(false) { }
 };
 
 class UdpBroadcastServer
