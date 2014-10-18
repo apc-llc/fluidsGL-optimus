@@ -12,4 +12,10 @@ public class GameLibJNIWrapper {
     public static native void on_draw_frame();
 
     public static native void on_connect(String bc_addr);
+
+    public static native void on_reset();
+
+    public static native void on_click(boolean clicked, int x, int y);
+
+    public static native void on_motion(int x, int y);
 }

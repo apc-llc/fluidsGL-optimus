@@ -111,7 +111,7 @@ public class FullscreenActivity extends Activity {
         findViewById(R.id.connect_button).setOnTouchListener(mDelayHideTouchListener);
         findViewById(R.id.reset_button).setOnTouchListener(mDelayHideTouchListener);
 
-        final Button connect = (Button) findViewById(R.id.connect_button);
+        final Button connect = (Button)findViewById(R.id.connect_button);
         connect.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
 		    	// Find addresses in all available network interfaces.
@@ -176,6 +176,35 @@ public class FullscreenActivity extends Activity {
             }
         });
 
+        final Button reset = (Button)findViewById(R.id.reset_button);
+        reset.setOnClickListener(new View.OnClickListener() {
+            public void onClick(View v) {
+				GameLibJNIWrapper.on_reset();
+            }
+        });
+
+		final GLSurfaceView particlesSurfaceView = (GLSurfaceView)findViewById(R.id.fullscreen_content);
+		particlesSurfaceView.setOnTouchListener(new View.OnTouchListener() {
+		    public boolean onTouch(View view, MotionEvent motionEvent) {
+		    	if (motionEvent.getAction() == MotionEvent.ACTION_DOWN)
+				{
+			        Log.v("AA", "particlesSurfaceView.setOnTouchListener ACTION_DOWN");
+					GameLibJNIWrapper.on_click(true, (int)motionEvent.getX(), (int)motionEvent.getY());
+				}
+		    	if (motionEvent.getAction() == MotionEvent.ACTION_UP)
+		    	{
+			        Log.v("AA", "particlesSurfaceView.setOnTouchListener ACTION_UP");
+					GameLibJNIWrapper.on_click(false, (int)motionEvent.getX(), (int)motionEvent.getY());
+				}
+		    	if (motionEvent.getAction() == MotionEvent.ACTION_MOVE)
+		    	{
+			        Log.v("AA", "particlesSurfaceView.setOnTouchListener ACTION_MOVE");
+		    		GameLibJNIWrapper.on_motion((int)motionEvent.getX(), (int)motionEvent.getY());
+		    	}
+		    	return true;
+		    }
+		});
+
         ActivityManager activityManager =
                 (ActivityManager) getSystemService(Context.ACTIVITY_SERVICE);
         ConfigurationInfo configurationInfo =
@@ -185,7 +214,7 @@ public class FullscreenActivity extends Activity {
     @Override
     protected void onPause() {
         Log.v("AA", "FullscreenActivity.onPause");
-        GLSurfaceView particlesSurfaceView = (GLSurfaceView)findViewById(R.id.fullscreen_content);
+        final GLSurfaceView particlesSurfaceView = (GLSurfaceView)findViewById(R.id.fullscreen_content);
         particlesSurfaceView.onPause();
         super.onPause();
     }
@@ -193,7 +222,7 @@ public class FullscreenActivity extends Activity {
     @Override
     protected void onResume() {
         Log.v("AA", "FullscreenActivity.onResume");
-        GLSurfaceView particlesSurfaceView = (GLSurfaceView)findViewById(R.id.fullscreen_content);
+        final GLSurfaceView particlesSurfaceView = (GLSurfaceView)findViewById(R.id.fullscreen_content);
         particlesSurfaceView.onResume();
         super.onResume();
     }

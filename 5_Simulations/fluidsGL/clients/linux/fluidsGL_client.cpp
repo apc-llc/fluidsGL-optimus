@@ -143,7 +143,7 @@ void keyboard(unsigned char key, int x, int y)
 
         case 'r':
         	{
-        		FeedbackConfig config;
+        		static FeedbackConfig config;
         		config.reset = true;
         		client->feedback(config);
         	}
@@ -160,15 +160,13 @@ void click(int button, int updown, int x, int y)
     lasty = y;
     clicked = !clicked;
 
-	FeedbackConfig config;
+	static FeedbackConfig config;
 	config.click = true;
 	config.clicked = clicked;
 	config.lastx = lastx;
 	config.lasty = lasty;
 	client->feedback(config);
 }
-
-FeedbackConfig config;
 
 void motion(int x, int y)
 {
@@ -187,6 +185,7 @@ void motion(int x, int y)
         int spy = ny-FR;
         int spx = nx-FR;
 
+		static FeedbackConfig config;
 		config.motion = true;
 		config.fx = fx; config.fy = fy;
 		config.spy = spy; config.spx = spx;

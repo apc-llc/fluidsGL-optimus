@@ -39,12 +39,42 @@ JNIEXPORT void JNICALL Java_com_example_caffemacchiato_GameLibJNIWrapper_on_1dra
 
 /*
  * Class:     com_example_caffemacchiato_GameLibJNIWrapper
- * Method:    on_draw_frame
+ * Method:    on_connect
  * Signature: ()V
  */
 JNIEXPORT void JNICALL Java_com_example_caffemacchiato_GameLibJNIWrapper_on_1connect
   (JNIEnv * env, jclass par2, jstring bc_addr){
 	on_connect(env->GetStringUTFChars(bc_addr, NULL));
+}
+
+/*
+ * Class:     com_example_caffemacchiato_GameLibJNIWrapper
+ * Method:    on_reset
+ * Signature: ()V
+ */
+JNIEXPORT void JNICALL Java_com_example_caffemacchiato_GameLibJNIWrapper_on_1reset
+  (JNIEnv * env, jclass par2){
+	on_reset();
+}
+
+/*
+ * Class:     com_example_caffemacchiato_GameLibJNIWrapper
+ * Method:    on_surface_changed
+ * Signature: (II)V
+ */
+JNIEXPORT void JNICALL Java_com_example_caffemacchiato_GameLibJNIWrapper_on_1click
+  (JNIEnv * par, jclass par1, jboolean clicked, jint x, jint y){
+	on_click(clicked, x, y);
+}
+
+/*
+ * Class:     com_example_caffemacchiato_GameLibJNIWrapper
+ * Method:    on_surface_changed
+ * Signature: (II)V
+ */
+JNIEXPORT void JNICALL Java_com_example_caffemacchiato_GameLibJNIWrapper_on_1motion
+  (JNIEnv * par, jclass par1, jint x, jint y){
+	on_motion(x, y);
 }
 
 #ifdef __cplusplus

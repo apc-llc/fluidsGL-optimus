@@ -147,6 +147,7 @@ CheckRender       *g_CheckRender = NULL;
 #ifdef BROADCAST
 std::auto_ptr<UdpBroadcastServer> server;
 pthread_mutex_t display_mutex = PTHREAD_MUTEX_INITIALIZER;
+static int wstep, hstep;
 #endif
 
 void autoTest();
@@ -549,17 +550,17 @@ void* feedback_listener(void* args)
 
 		if (config.click)
 		{
-			lastx = config.lastx;
-			lasty = config.lasty;
+			lastx = config.lastx * wstep;
+			lasty = config.lasty * hstep;
 			clicked = config.clicked;
 		}
 		
 		if (config.motion)
 		{
 			pthread_mutex_lock(&display_mutex);
-			lastx = config.lastx;
-			lasty = config.lasty;
-			motion(config.lastx, config.lasty, config.nx, config.ny,
+			lastx = config.lastx * wstep;
+			lasty = config.lasty * hstep;
+			motion(config.lastx * wstep, config.lasty * hstep, config.nx, config.ny,
 				config.fx, config.fy, config.spy, config.spx);
 			pthread_mutex_unlock(&display_mutex);
 		}
@@ -672,7 +673,7 @@ int main(int argc, char **argv)
 
 	// Create additional space to store particle packets
 	// for broadcasting.
-	int wstep = step, hstep = step;
+	wstep = step; hstep = step;
 	int npackets = sizeof(float) * (DIM / wstep) * (DIM / hstep) / UdpBroadcastServer::PacketSize;
 	if (sizeof(float) * (DIM / wstep) * (DIM / hstep) % UdpBroadcastServer::PacketSize)
 		npackets++;

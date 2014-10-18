@@ -1,7 +1,7 @@
 #ifndef DEFINES_H
 #define DEFINES_H
 
-#define SCALING  4                 // Extra scaling for performing larger simulations
+#define SCALING  2                 // Extra scaling for performing larger simulations
 #define DIM     (512*SCALING)      // Square size of solver domain
 #define DS      (DIM*DIM)          // Total domain size
 #define CPADW   (DIM/2+1)          // Padded width for real->complex in-place FFT

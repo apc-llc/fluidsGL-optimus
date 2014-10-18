@@ -21,6 +21,9 @@
 #define ALOGV(...)
 #endif
 
+#define SCALING  1
+#define FR      (4*4*SCALING)        // Force update radius
+
 static bool checkGlError(const char* funcName) {
 	GLint err = glGetError();
 	if (err != GL_NO_ERROR) {
@@ -134,8 +137,6 @@ static int DS, cData;
 
 static int wWidth = 0;
 static int wHeight = 0;
-
-static int clicked = 0, fullscreen = 0;
 
 GLuint vbo = 0;                 // OpenGL vertex buffer object
 static char *particles = NULL;  // particle positions in host memory
@@ -275,7 +276,7 @@ void on_connect(const char* bc_addr)
 
 	// Calculate the point size based on problem size
 	// relative to screen size and force shaders recompilation.
-	radius = 0.9f * MIN((float)wWidth / width, (float)wHeight / height);
+	radius = 0.7f * MIN((float)wWidth / width, (float)wHeight / height);
 	mProgram = 0;
 
 	ALOGV("Starting broadcast listener thread");
@@ -284,5 +285,70 @@ void on_connect(const char* bc_addr)
     // TODO Cancel this thread, if already exits.
     pthread_t tid;
     pthread_create(&tid, NULL, &broadcast_listener, NULL);
+}
+
+static bool clicked = false;
+
+void on_reset()
+{
+    ALOGV("on_reset");
+    clicked = false;
+
+	static FeedbackConfig config;
+	config.reset = true;
+	client->feedback(config);
+}
+
+void on_click(bool clicked_, int x, int y)
+{
+    ALOGV("on_reset");
+
+    lastx = x;
+    lasty = y;
+	clicked = clicked_;
+
+	static FeedbackConfig config;
+	config.click = true;
+	config.clicked = clicked;
+	config.lastx = lastx;
+	config.lasty = lasty;
+	client->feedback(config);
+}
+
+void on_motion(int x, int y)
+{
+    ALOGV("on_motion(%d, %d)", x, y);
+
+    // Convert motion coordinates to domain
+    float fx = (lastx / (float)wWidth);
+    float fy = (lasty / (float)wHeight);
+    int nx = (int)(fx * width);
+    int ny = (int)(fy * height);
+
+	ALOGV("clicked = %d, nx = %d, width-FR = %d, FR-1 = %d, ny = %d, height-FR = %d, FR-1 = %d",
+		(int)clicked, nx, width-FR, FR-1, ny, height-FR, FR-1);
+
+    if (clicked && nx < width-FR && nx > FR-1 && ny < height-FR && ny > FR-1)
+    {
+        int ddx = x - lastx;
+        int ddy = y - lasty;
+        fx = ddx / (float)wWidth;
+        fy = ddy / (float)wHeight;
+        int spy = ny-FR;
+        int spx = nx-FR;
+
+		static FeedbackConfig config;
+		config.motion = true;
+		config.fx = fx; config.fy = fy;
+		config.spy = spy; config.spx = spx;
+		config.nx = nx; config.ny = ny;
+		config.lastx = lastx; config.lasty = lasty;
+		client->feedback(config);
+
+		ALOGV("on_moving_to");
+
+        lastx = x;
+        lasty = y;
+    }
 }
 
